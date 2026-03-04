@@ -341,6 +341,41 @@ export default async function AdminRestockPage(props: {
           margin-bottom: 16px;
         }
 
+        .rr-guide {
+          border: 1px solid var(--rr-border);
+          border-radius: 12px;
+          padding: 12px 14px;
+          margin: 0 0 16px;
+          background: linear-gradient(180deg, #ffffff 0%, #fbfbfb 100%);
+        }
+
+        .rr-guide h3 {
+          margin: 0 0 8px;
+          font-size: 18px;
+          line-height: 1.2;
+          font-family: var(--font-heading-family, var(--font-body-family, inherit));
+        }
+
+        .rr-guide ol {
+          margin: 0;
+          padding-left: 18px;
+        }
+
+        .rr-action-card {
+          border: 1px solid var(--rr-border);
+          border-radius: 10px;
+          padding: 8px;
+          background: #fff;
+        }
+
+        .rr-help {
+          margin-top: 6px;
+          font-size: 12px;
+          color: #4a5764;
+          max-width: 360px;
+          line-height: 1.35;
+        }
+
         .rr-pager {
           display: flex;
           align-items: center;
@@ -408,6 +443,16 @@ export default async function AdminRestockPage(props: {
         </div>
       ) : null}
 
+      <section className="rr-guide" aria-label="Manual restock instructions">
+        <h3>Manual Restock Quick Guide</h3>
+        <ol>
+          <li>Find the variant ID from your product URL or the variants table in Shopify admin.</li>
+          <li>Paste the variant ID and click <strong>Trigger + Process Now</strong> for one-step send testing.</li>
+          <li>Check <strong>Recent Events</strong> for `processed` and <strong>Message Log</strong> for `sent` or `failed`.</li>
+          <li>Use <strong>Requeue</strong> on a subscription row if you need to resend for that subscriber.</li>
+        </ol>
+      </section>
+
       <section className="rr-kpis">
         <div className="rr-kpi">
           <strong>Subscriptions</strong>
@@ -467,33 +512,53 @@ export default async function AdminRestockPage(props: {
       </form>
 
       <div className="rr-actions">
-        <form action={triggerVariantAction}>
-          <input
-            type="text"
-            name="variantId"
-            placeholder="Variant ID"
-            style={{ width: 200, marginRight: 8 }}
-          />
-          <button type="submit">Queue Manual Restock Event</button>
-        </form>
+        <div className="rr-action-card">
+          <form action={triggerVariantAction}>
+            <input
+              type="text"
+              name="variantId"
+              placeholder="Variant ID"
+              style={{ width: 200, marginRight: 8 }}
+            />
+            <button type="submit" title="Adds an event to queue only. Does not send until processed.">
+              Queue Manual Restock Event
+            </button>
+          </form>
+          <p className="rr-help">Queue only. Use this if you want to line up multiple variants first.</p>
+        </div>
 
-        <form action={triggerAndProcessAction}>
-          <input
-            type="text"
-            name="variantId"
-            placeholder="Variant ID"
-            style={{ width: 200, marginRight: 8 }}
-          />
-          <button type="submit">Trigger + Process Now</button>
-        </form>
+        <div className="rr-action-card">
+          <form action={triggerAndProcessAction}>
+            <input
+              type="text"
+              name="variantId"
+              placeholder="Variant ID"
+              style={{ width: 200, marginRight: 8 }}
+            />
+            <button type="submit" title="Queues one variant event and immediately processes sends.">
+              Trigger + Process Now
+            </button>
+          </form>
+          <p className="rr-help">Fastest test button. One click to queue and send.</p>
+        </div>
 
-        <form action={processNowAction}>
-          <button type="submit">Process Queue Now</button>
-        </form>
+        <div className="rr-action-card">
+          <form action={processNowAction}>
+            <button type="submit" title="Processes all currently queued events and sends notifications.">
+              Process Queue Now
+            </button>
+          </form>
+          <p className="rr-help">Use after queueing events if they have not been processed yet.</p>
+        </div>
 
-        <form action={ensureWebhookAction}>
-          <button type="submit">Ensure Shopify Inventory Webhook</button>
-        </form>
+        <div className="rr-action-card">
+          <form action={ensureWebhookAction}>
+            <button type="submit" title="Creates or verifies inventory webhook registration in Shopify.">
+              Ensure Shopify Inventory Webhook
+            </button>
+          </form>
+          <p className="rr-help">Run this after app/env changes to keep webhook delivery active.</p>
+        </div>
       </div>
 
       <h2>Subscriptions</h2>
