@@ -31,3 +31,13 @@ export interface RestockEvent {
   shopify_webhook_id: string | null;
   status: EventStatus;
 }
+
+export interface MessageLogEntry {
+  id: string;
+  subscription_id: string;
+  channel: MessageChannel;
+  provider_message_id: string | null;
+  sent_at: string;
+  status: MessageStatus;
+  error: string | null;
+}

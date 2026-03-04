@@ -2,16 +2,12 @@ const requiredVars = [
   "APP_BASE_URL",
   "CRON_JOB_SECRET",
   "SHOPIFY_STORE_DOMAIN",
-  "SHOPIFY_ADMIN_TOKEN",
   "SHOPIFY_WEBHOOK_SECRET",
   "SHOPIFY_LOCATION_ID",
   "ADMIN_USERNAME",
   "ADMIN_PASSWORD",
   "RESEND_API_KEY",
-  "RESEND_FROM",
-  "TWILIO_ACCOUNT_SID",
-  "TWILIO_AUTH_TOKEN",
-  "TWILIO_FROM_NUMBER"
+  "RESEND_FROM"
 ] as const;
 
 export function getEnv(name: string): string {
@@ -28,4 +24,18 @@ export function assertRequiredEnv(): void {
       throw new Error(`Missing required env var: ${key}`);
     }
   }
+
+  const hasAdminToken = Boolean(process.env.SHOPIFY_ADMIN_TOKEN);
+  const hasClientCreds = Boolean(process.env.SHOPIFY_CLIENT_ID && process.env.SHOPIFY_CLIENT_SECRET);
+  if (!hasAdminToken && !hasClientCreds) {
+    throw new Error(
+      "Missing Shopify auth configuration: set SHOPIFY_ADMIN_TOKEN or both SHOPIFY_CLIENT_ID and SHOPIFY_CLIENT_SECRET"
+    );
+  }
+}
+
+export function isTwilioConfigured(): boolean {
+  return Boolean(
+    process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_FROM_NUMBER
+  );
 }

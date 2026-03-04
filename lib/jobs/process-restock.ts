@@ -7,6 +7,7 @@ import {
 import { sendRestockEmail } from "@/lib/providers/email";
 import { sendRestockSms } from "@/lib/providers/sms";
 import { isVariantSellableOnline } from "@/lib/shopify/admin";
+import { isTwilioConfigured } from "@/lib/utils/env";
 
 export interface ProcessResult {
   eventsClaimed: number;
@@ -17,6 +18,7 @@ export interface ProcessResult {
 
 export async function processRestockQueue(limit = 100): Promise<ProcessResult> {
   const claimedEvents = await claimQueuedEvents(limit);
+  const smsEnabled = isTwilioConfigured();
   let subscriptionsProcessed = 0;
   let messagesSent = 0;
   let messagesFailed = 0;
@@ -63,7 +65,7 @@ export async function processRestockQueue(limit = 100): Promise<ProcessResult> {
         }
       }
 
-      if (subscription.phone && subscription.sms_consent) {
+      if (smsEnabled && subscription.phone && subscription.sms_consent) {
         try {
           const providerMessageId = await sendRestockSms({
             to: subscription.phone,

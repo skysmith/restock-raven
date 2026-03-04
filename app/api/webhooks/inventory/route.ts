@@ -7,7 +7,10 @@ import {
   insertRestockEvent,
   upsertVariantInventoryState
 } from "@/lib/db/events";
-import { isZeroToPositiveTransition } from "@/lib/jobs/transition";
+import {
+  getRestockTriggerMode,
+  isZeroToThresholdTransition
+} from "@/lib/jobs/transition";
 
 interface InventoryWebhookPayload {
   inventory_item_id: number;
@@ -45,7 +48,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   const previousQty = await getVariantInventoryState(variantId);
-  const shouldQueue = isZeroToPositiveTransition(previousQty, nextQty);
+  const triggerMode = getRestockTriggerMode();
+  const shouldQueue =
+    triggerMode === "threshold" ? isZeroToThresholdTransition(previousQty, nextQty) : false;
 
   const webhookId = request.headers.get("x-shopify-webhook-id");
 
@@ -60,5 +65,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   await upsertVariantInventoryState(variantId, nextQty);
 
-  return NextResponse.json({ ok: true, queued: shouldQueue });
+  return NextResponse.json({
+    ok: true,
+    queued: shouldQueue,
+    triggerMode,
+    reason: shouldQueue ? "threshold_transition" : triggerMode === "manual" ? "manual_mode" : "below_threshold"
+  });
 }

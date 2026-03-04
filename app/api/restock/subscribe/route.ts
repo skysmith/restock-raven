@@ -3,7 +3,7 @@ import { subscribeSchema } from "@/lib/validation";
 import { normalizePhone } from "@/lib/utils/phone";
 import { hashIp } from "@/lib/utils/crypto";
 import { upsertSubscription } from "@/lib/db/subscriptions";
-import { getEnv } from "@/lib/utils/env";
+import { getEnv, isTwilioConfigured } from "@/lib/utils/env";
 
 function corsHeaders(): Record<string, string> {
   return {
@@ -27,6 +27,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const email = parsed.email?.trim().toLowerCase() ?? null;
     const phone = parsed.phone ? normalizePhone(parsed.phone) : null;
+    if (phone && !isTwilioConfigured()) {
+      return NextResponse.json(
+        { ok: false, error: "SMS alerts are temporarily unavailable. Submit email only." },
+        { status: 400, headers: corsHeaders() }
+      );
+    }
 
     const forwardedFor = request.headers.get("x-forwarded-for") ?? "";
     const ip = forwardedFor.split(",")[0]?.trim() ?? "";

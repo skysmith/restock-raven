@@ -1,6 +1,6 @@
 # Restock Raven (v1)
 
-Private single-store Shopify restock alerts (variant-specific) using Vercel, Neon (via Vercel Marketplace), Resend, and Twilio.
+Private single-store Shopify restock alerts (variant-specific) using Vercel, Neon (via Vercel Marketplace), and Resend, with optional Twilio SMS.
 
 ## What v1 includes
 - Variant-level subscriptions (`variant_id`)
@@ -25,7 +25,16 @@ Internal:
 - `POST /api/jobs/process`
 - `GET /api/admin/restock/subscriptions?q=...`
 - `POST /api/admin/restock/requeue`
+- `POST /api/admin/restock/trigger` (manual queue by `variantId`)
+- `GET /api/admin/restock/export` (CSV export)
 - `GET /admin/restock`
+
+Dashboard includes:
+- Subscription/event/message KPI cards
+- Filterable subscriptions/events/message log
+- Pagination for all dashboard tables
+- CSV export for filtered subscriptions
+- One-click `Trigger + Process Now` action
 
 ## Local setup
 ```bash
@@ -62,6 +71,13 @@ npm run healthcheck
 - No OAuth/billing/multi-store support in v1.
 - No checkout/cart modifications.
 - Location handling is single configured location only in v1.
+- Twilio is optional. In email-only mode (no Twilio env vars), phone subscriptions are rejected and SMS sends are skipped.
+- Shopify auth supports either:
+  - `SHOPIFY_ADMIN_TOKEN` (legacy static token), or
+  - `SHOPIFY_CLIENT_ID` + `SHOPIFY_CLIENT_SECRET` (Dev Dashboard client credentials exchange).
+- Restock trigger mode:
+  - `RESTOCK_TRIGGER_MODE=threshold` (default): queue only when variant inventory goes from `<=0` to `>= RESTOCK_MIN_QTY_FROM_ZERO` (default `11`).
+  - `RESTOCK_TRIGGER_MODE=manual`: Shopify inventory webhooks do not auto-queue sends; trigger manually via admin UI or `POST /api/admin/restock/trigger`.
 
 ## Operational Docs
 - [Security Policy](./SECURITY.md)

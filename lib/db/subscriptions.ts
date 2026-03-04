@@ -13,6 +13,7 @@ export interface UpsertSubscriptionInput {
 }
 
 type SqlTag = typeof sql;
+type SubscriptionStatusFilter = "active" | "notified" | "unsubscribed" | "all";
 
 export async function upsertSubscription(
   input: UpsertSubscriptionInput,
@@ -89,28 +90,69 @@ export async function unsubscribeAllByToken(token: string, db: SqlTag = sql): Pr
   return rowCount ?? 0;
 }
 
-export async function listSubscriptions(query?: string, db: SqlTag = sql): Promise<RestockSubscription[]> {
-  if (!query) {
-    const { rows } = await db<RestockSubscription>`
-      SELECT *
-      FROM restock_subscriptions
-      ORDER BY created_at DESC
-      LIMIT 200
-    `;
-    return rows;
-  }
+export async function listSubscriptions(
+  query?: string,
+  status: SubscriptionStatusFilter = "all",
+  options: { limit?: number; offset?: number } = {},
+  db: SqlTag = sql
+): Promise<RestockSubscription[]> {
+  const trimmed = query?.trim();
+  const statusFilter = status === "all" ? null : status;
+  const limit = options.limit ?? 300;
+  const offset = options.offset ?? 0;
 
-  const trimmed = query.trim();
   const { rows } = await db<RestockSubscription>`
     SELECT *
     FROM restock_subscriptions
-    WHERE email ILIKE ${`%${trimmed}%`}
-       OR phone ILIKE ${`%${trimmed}%`}
-       OR variant_id ILIKE ${`%${trimmed}%`}
+    WHERE (${statusFilter}::subscription_status IS NULL OR status = ${statusFilter}::subscription_status)
+      AND (
+        ${trimmed ?? null}::text IS NULL
+        OR email ILIKE ${`%${trimmed ?? ""}%`}
+        OR phone ILIKE ${`%${trimmed ?? ""}%`}
+        OR variant_id ILIKE ${`%${trimmed ?? ""}%`}
+      )
     ORDER BY created_at DESC
-    LIMIT 200
+    LIMIT ${limit}
+    OFFSET ${offset}
   `;
   return rows;
+}
+
+export async function countSubscriptions(
+  query?: string,
+  status: SubscriptionStatusFilter = "all",
+  db: SqlTag = sql
+): Promise<number> {
+  const trimmed = query?.trim();
+  const statusFilter = status === "all" ? null : status;
+
+  const { rows } = await db<{ count: number }>`
+    SELECT COUNT(*)::int AS count
+    FROM restock_subscriptions
+    WHERE (${statusFilter}::subscription_status IS NULL OR status = ${statusFilter}::subscription_status)
+      AND (
+        ${trimmed ?? null}::text IS NULL
+        OR email ILIKE ${`%${trimmed ?? ""}%`}
+        OR phone ILIKE ${`%${trimmed ?? ""}%`}
+        OR variant_id ILIKE ${`%${trimmed ?? ""}%`}
+      )
+  `;
+  return rows[0]?.count ?? 0;
+}
+
+export async function getSubscriptionStatusCounts(db: SqlTag = sql): Promise<Record<string, number>> {
+  const { rows } = await db<{ status: string; count: number }>`
+    SELECT status::text AS status, COUNT(*)::int AS count
+    FROM restock_subscriptions
+    GROUP BY status
+  `;
+
+  const result: Record<string, number> = { active: 0, notified: 0, unsubscribed: 0, total: 0 };
+  for (const row of rows) {
+    result[row.status] = row.count;
+    result.total += row.count;
+  }
+  return result;
 }
 
 export async function requeueSubscription(subscriptionId: string): Promise<boolean> {

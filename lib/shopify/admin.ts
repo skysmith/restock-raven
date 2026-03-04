@@ -1,10 +1,51 @@
 import { getEnv } from "@/lib/utils/env";
 
 const apiVersion = "2025-01";
+let cachedAccessToken: { token: string; expiresAt: number } | null = null;
+
+async function getShopifyAccessToken(): Promise<string> {
+  if (process.env.SHOPIFY_ADMIN_TOKEN) {
+    return process.env.SHOPIFY_ADMIN_TOKEN;
+  }
+
+  if (cachedAccessToken && cachedAccessToken.expiresAt > Date.now() + 60_000) {
+    return cachedAccessToken.token;
+  }
+
+  const store = getEnv("SHOPIFY_STORE_DOMAIN");
+  const clientId = getEnv("SHOPIFY_CLIENT_ID");
+  const clientSecret = getEnv("SHOPIFY_CLIENT_SECRET");
+
+  const response = await fetch(`https://${store}/admin/oauth/access_token`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      grant_type: "client_credentials"
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`Shopify token exchange failed: ${response.status}`);
+  }
+
+  const data = (await response.json()) as { access_token?: string; expires_in?: number };
+  if (!data.access_token) {
+    throw new Error("Shopify token exchange returned no access_token");
+  }
+
+  const ttlMs = Math.max(60_000, (data.expires_in ?? 300) * 1000);
+  cachedAccessToken = { token: data.access_token, expiresAt: Date.now() + ttlMs };
+
+  return data.access_token;
+}
 
 async function shopifyGraphql<T>(query: string, variables: Record<string, unknown>): Promise<T> {
   const store = getEnv("SHOPIFY_STORE_DOMAIN");
-  const token = getEnv("SHOPIFY_ADMIN_TOKEN");
+  const token = await getShopifyAccessToken();
 
   const response = await fetch(`https://${store}/admin/api/${apiVersion}/graphql.json`, {
     method: "POST",
