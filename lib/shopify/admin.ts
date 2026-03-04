@@ -72,6 +72,94 @@ async function shopifyGraphql<T>(query: string, variables: Record<string, unknow
   return data.data;
 }
 
+export async function ensureInventoryWebhook(callbackUrl: string): Promise<{
+  created: boolean;
+  existingId?: string;
+  createdId?: string;
+}> {
+  const listQuery = `
+    query WebhookSubscriptions {
+      webhookSubscriptions(first: 50) {
+        nodes {
+          id
+          topic
+          endpoint {
+            __typename
+            ... on WebhookHttpEndpoint {
+              callbackUrl
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  const existing = await shopifyGraphql<{
+    webhookSubscriptions: {
+      nodes: Array<{
+        id: string;
+        topic: string;
+        endpoint: { __typename: string; callbackUrl?: string };
+      }>;
+    };
+  }>(listQuery, {});
+
+  const match = existing.webhookSubscriptions.nodes.find(
+    (node) =>
+      node.topic === "INVENTORY_LEVELS_UPDATE" &&
+      node.endpoint.__typename === "WebhookHttpEndpoint" &&
+      node.endpoint.callbackUrl === callbackUrl
+  );
+
+  if (match) {
+    return { created: false, existingId: match.id };
+  }
+
+  const createMutation = `
+    mutation CreateWebhook($topic: WebhookSubscriptionTopic!, $webhookSubscription: WebhookSubscriptionInput!) {
+      webhookSubscriptionCreate(topic: $topic, webhookSubscription: $webhookSubscription) {
+        userErrors {
+          field
+          message
+        }
+        webhookSubscription {
+          id
+        }
+      }
+    }
+  `;
+
+  const created = await shopifyGraphql<{
+    webhookSubscriptionCreate: {
+      userErrors: Array<{ field: string[] | null; message: string }>;
+      webhookSubscription: { id: string } | null;
+    };
+  }>(createMutation, {
+    topic: "INVENTORY_LEVELS_UPDATE",
+    webhookSubscription: {
+      callbackUrl,
+      format: "JSON"
+    }
+  });
+
+  if (created.webhookSubscriptionCreate.userErrors.length) {
+    throw new Error(
+      `Shopify webhook create failed: ${created.webhookSubscriptionCreate.userErrors
+        .map((e) => e.message)
+        .join(", ")}`
+    );
+  }
+
+  if (!created.webhookSubscriptionCreate.webhookSubscription) {
+    throw new Error("Shopify webhook create failed: no webhook subscription returned");
+  }
+
+  return {
+    created: true,
+    createdId: created.webhookSubscriptionCreate.webhookSubscription.id
+  };
+}
+
 export async function getVariantIdByInventoryItemId(inventoryItemId: string): Promise<string | null> {
   const query = `
     query VariantByInventoryItem($query: String!) {

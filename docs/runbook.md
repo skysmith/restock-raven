@@ -44,6 +44,7 @@ Twilio is optional:
   - message log table with failures
   - CSV export of filtered subscriptions
   - `Trigger + Process Now` button for rapid restock blasts
+  - `Ensure Shopify Inventory Webhook` button to auto-create webhook endpoint
 
 ## Rollout Safety
 1. Install widget only in duplicate theme.

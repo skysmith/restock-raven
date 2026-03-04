@@ -135,6 +135,19 @@ async function processNowAction(): Promise<void> {
   revalidatePath("/admin/restock");
 }
 
+async function ensureWebhookAction(): Promise<void> {
+  "use server";
+
+  await fetch(`${process.env.APP_BASE_URL}/api/admin/restock/webhooks/ensure`, {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${Buffer.from(`${process.env.ADMIN_USERNAME}:${process.env.ADMIN_PASSWORD}`).toString("base64")}`
+    }
+  });
+
+  revalidatePath("/admin/restock");
+}
+
 export default async function AdminRestockPage(props: {
   searchParams: Promise<{
     q?: string;
@@ -300,6 +313,10 @@ export default async function AdminRestockPage(props: {
 
         <form action={processNowAction}>
           <button type="submit">Process Queue Now</button>
+        </form>
+
+        <form action={ensureWebhookAction}>
+          <button type="submit">Ensure Shopify Inventory Webhook</button>
         </form>
       </div>
 

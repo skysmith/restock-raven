@@ -27,6 +27,7 @@ Internal:
 - `POST /api/admin/restock/requeue`
 - `POST /api/admin/restock/trigger` (manual queue by `variantId`)
 - `GET /api/admin/restock/export` (CSV export)
+- `POST /api/admin/restock/webhooks/ensure` (create inventory webhook to this app URL)
 - `GET /admin/restock`
 
 Dashboard includes:
