@@ -114,7 +114,11 @@ async function triggerVariantAction(formData: FormData): Promise<void> {
   const variantId = String(formData.get("variantId") ?? "").trim();
   if (!variantId) return;
 
-  await queueManualEvent(variantId);
+  try {
+    await queueManualEvent(variantId);
+  } catch (error) {
+    console.error("triggerVariantAction failed", error);
+  }
   revalidatePath("/admin/restock");
 }
 
@@ -124,26 +128,38 @@ async function triggerAndProcessAction(formData: FormData): Promise<void> {
   const variantId = String(formData.get("variantId") ?? "").trim();
   if (!variantId) return;
 
-  await queueManualEvent(variantId);
-  await processRestockQueue(100);
+  try {
+    await queueManualEvent(variantId);
+    await processRestockQueue(100);
+  } catch (error) {
+    console.error("triggerAndProcessAction failed", error);
+  }
   revalidatePath("/admin/restock");
 }
 
 async function processNowAction(): Promise<void> {
   "use server";
-  await processRestockQueue(100);
+  try {
+    await processRestockQueue(100);
+  } catch (error) {
+    console.error("processNowAction failed", error);
+  }
   revalidatePath("/admin/restock");
 }
 
 async function ensureWebhookAction(): Promise<void> {
   "use server";
 
-  await fetch(`${process.env.APP_BASE_URL}/api/admin/restock/webhooks/ensure`, {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${Buffer.from(`${process.env.ADMIN_USERNAME}:${process.env.ADMIN_PASSWORD}`).toString("base64")}`
-    }
-  });
+  try {
+    await fetch(`${process.env.APP_BASE_URL}/api/admin/restock/webhooks/ensure`, {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${process.env.ADMIN_USERNAME}:${process.env.ADMIN_PASSWORD}`).toString("base64")}`
+      }
+    });
+  } catch (error) {
+    console.error("ensureWebhookAction failed", error);
+  }
 
   revalidatePath("/admin/restock");
 }
