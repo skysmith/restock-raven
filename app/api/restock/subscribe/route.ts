@@ -5,22 +5,26 @@ import { hashIp } from "@/lib/utils/crypto";
 import { upsertSubscription } from "@/lib/db/subscriptions";
 import { getEnv, isTwilioConfigured } from "@/lib/utils/env";
 
-function corsHeaders(): Record<string, string> {
+function corsHeaders(origin?: string | null): Record<string, string> {
+  const fallbackOrigin = `https://${getEnv("SHOPIFY_STORE_DOMAIN")}`;
+  const allowOrigin = origin && /^https?:\/\//i.test(origin) ? origin : fallbackOrigin;
   return {
-    "Access-Control-Allow-Origin": `https://${getEnv("SHOPIFY_STORE_DOMAIN")}`,
+    "Access-Control-Allow-Origin": allowOrigin,
     "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type"
+    "Access-Control-Allow-Headers": "Content-Type",
+    Vary: "Origin"
   };
 }
 
-export async function OPTIONS(): Promise<NextResponse> {
+export async function OPTIONS(request: NextRequest): Promise<NextResponse> {
   return new NextResponse(null, {
     status: 204,
-    headers: corsHeaders()
+    headers: corsHeaders(request.headers.get("origin"))
   });
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  const origin = request.headers.get("origin");
   try {
     const body = await request.json();
     const parsed = subscribeSchema.parse(body);
@@ -30,7 +34,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (phone && !isTwilioConfigured()) {
       return NextResponse.json(
         { ok: false, error: "SMS alerts are temporarily unavailable. Submit email only." },
-        { status: 400, headers: corsHeaders() }
+        { status: 400, headers: corsHeaders(origin) }
       );
     }
 
@@ -54,13 +58,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     return NextResponse.json(
       { ok: true, subscriptionId: subscription.id },
-      { headers: corsHeaders() }
+      { headers: corsHeaders(origin) }
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "Invalid request";
     return NextResponse.json(
       { ok: false, error: message },
-      { status: 400, headers: corsHeaders() }
+      { status: 400, headers: corsHeaders(origin) }
     );
   }
 }
