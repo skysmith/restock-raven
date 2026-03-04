@@ -175,36 +175,51 @@ export default async function AdminRestockPage(props: {
   const currentEventPage = toPositiveInt(eventPage, 1);
   const currentMsgPage = toPositiveInt(msgPage, 1);
 
-  const [
-    subscriptions,
-    subscriptionsTotal,
-    subscriptionCounts,
-    eventCounts,
-    messageCounts,
-    events,
-    eventsTotal,
-    messageLog,
-    messageLogTotal
-  ] = await Promise.all([
-    listSubscriptions(q, status, {
-      limit: SUB_PAGE_SIZE,
-      offset: (currentSubPage - 1) * SUB_PAGE_SIZE
-    }),
-    countSubscriptions(q, status),
-    getSubscriptionStatusCounts(),
-    getEventStatusCounts(),
-    getMessageStatusCounts(),
-    listRecentEvents(EVENT_PAGE_SIZE, eventStatus, (currentEventPage - 1) * EVENT_PAGE_SIZE),
-    countEvents(eventStatus),
-    listMessageLog({
-      query: q,
-      status: msgStatus,
-      channel,
-      limit: MSG_PAGE_SIZE,
-      offset: (currentMsgPage - 1) * MSG_PAGE_SIZE
-    }),
-    countMessageLog({ query: q, status: msgStatus, channel })
-  ]);
+  let subscriptions = [] as Awaited<ReturnType<typeof listSubscriptions>>;
+  let subscriptionsTotal = 0;
+  let subscriptionCounts: Record<string, number> = { active: 0, notified: 0, unsubscribed: 0, total: 0 };
+  let eventCounts: Record<string, number> = { received: 0, queued: 0, processed: 0, ignored: 0, total: 0 };
+  let messageCounts: Record<string, number> = { sent: 0, failed: 0, total: 0 };
+  let events = [] as Awaited<ReturnType<typeof listRecentEvents>>;
+  let eventsTotal = 0;
+  let messageLog = [] as Awaited<ReturnType<typeof listMessageLog>>;
+  let messageLogTotal = 0;
+  let dashboardError: string | null = null;
+
+  try {
+    [
+      subscriptions,
+      subscriptionsTotal,
+      subscriptionCounts,
+      eventCounts,
+      messageCounts,
+      events,
+      eventsTotal,
+      messageLog,
+      messageLogTotal
+    ] = await Promise.all([
+      listSubscriptions(q, status, {
+        limit: SUB_PAGE_SIZE,
+        offset: (currentSubPage - 1) * SUB_PAGE_SIZE
+      }),
+      countSubscriptions(q, status),
+      getSubscriptionStatusCounts(),
+      getEventStatusCounts(),
+      getMessageStatusCounts(),
+      listRecentEvents(EVENT_PAGE_SIZE, eventStatus, (currentEventPage - 1) * EVENT_PAGE_SIZE),
+      countEvents(eventStatus),
+      listMessageLog({
+        query: q,
+        status: msgStatus,
+        channel,
+        limit: MSG_PAGE_SIZE,
+        offset: (currentMsgPage - 1) * MSG_PAGE_SIZE
+      }),
+      countMessageLog({ query: q, status: msgStatus, channel })
+    ]);
+  } catch (error) {
+    dashboardError = error instanceof Error ? error.message : "Unknown dashboard data error";
+  }
 
   const csvHref = `/api/admin/restock/export?q=${encodeURIComponent(q ?? "")}&status=${encodeURIComponent(
     status
@@ -224,6 +239,19 @@ export default async function AdminRestockPage(props: {
   return (
     <main style={{ fontFamily: "sans-serif", padding: 24 }}>
       <h1>Restock Raven Admin</h1>
+      {dashboardError ? (
+        <div
+          style={{
+            background: "#fff3cd",
+            border: "1px solid #ffe69c",
+            borderRadius: 8,
+            padding: 10,
+            marginBottom: 12
+          }}
+        >
+          Dashboard data failed to load: {dashboardError}
+        </div>
+      ) : null}
 
       <section
         style={{
