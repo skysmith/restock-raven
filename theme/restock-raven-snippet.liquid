@@ -1,0 +1,87 @@
+{% comment %}
+  Restock Raven v1 widget snippet (duplicate theme only)
+  - Kill switch: theme setting enable_restock_raven
+  - Only renders when selected variant is unavailable
+  - Posts to backend /api/restock/subscribe
+{% endcomment %}
+
+{% if settings.enable_restock_raven %}
+  <div id="restock-raven" data-product-id="{{ product.id }}" style="display:none; margin-top: 12px;">
+    <p><strong>Notify me when back in stock</strong></p>
+    <form id="restock-raven-form">
+      <input type="email" name="email" placeholder="Email" />
+      <input type="tel" name="phone" placeholder="Phone (+1...)" />
+      <label>
+        <input type="checkbox" name="smsConsent" value="true" />
+        I agree to receive SMS restock alerts.
+      </label>
+      <label>
+        <input type="checkbox" name="marketingOptIn" value="true" />
+        Also send me new product announcements and general restock updates.
+      </label>
+      <button type="submit">Notify me</button>
+      <p id="restock-raven-result" style="font-size: 12px;"></p>
+    </form>
+  </div>
+
+  <script>
+    (function () {
+      var root = document.getElementById('restock-raven');
+      if (!root || !window.Shopify || !window.ShopifyAnalytics) return;
+
+      function getSelectedVariant() {
+        if (window.ShopifyAnalytics && window.ShopifyAnalytics.meta && window.ShopifyAnalytics.meta.selectedVariantId) {
+          var id = String(window.ShopifyAnalytics.meta.selectedVariantId);
+          return (window.meta && window.meta.product && window.meta.product.variants || []).find(function (v) {
+            return String(v.id) === id;
+          });
+        }
+        return null;
+      }
+
+      function updateVisibility() {
+        var v = getSelectedVariant();
+        if (!v) return;
+        root.dataset.variantId = String(v.id);
+        root.style.display = v.available ? 'none' : 'block';
+      }
+
+      document.addEventListener('variant:change', updateVisibility);
+      document.addEventListener('change', function (e) {
+        if (e.target && e.target.name === 'id') updateVisibility();
+      });
+      updateVisibility();
+
+      var form = document.getElementById('restock-raven-form');
+      var result = document.getElementById('restock-raven-result');
+
+      form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        var fd = new FormData(form);
+        var payload = {
+          email: fd.get('email') || null,
+          phone: fd.get('phone') || null,
+          smsConsent: fd.get('smsConsent') === 'true',
+          marketingOptIn: fd.get('marketingOptIn') === 'true',
+          productId: root.dataset.productId,
+          variantId: root.dataset.variantId
+        };
+
+        var endpoint = window.restockRavenEndpoint || 'https://restock-raven.vercel.app/api/restock/subscribe';
+        var res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          result.textContent = "You're in. We'll notify you when it's back.";
+          form.reset();
+        } else {
+          var body = await res.json().catch(function () { return {}; });
+          result.textContent = body.error || 'Could not subscribe.';
+        }
+      });
+    })();
+  </script>
+{% endif %}
