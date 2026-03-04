@@ -62,3 +62,7 @@ npm run healthcheck
 - No OAuth/billing/multi-store support in v1.
 - No checkout/cart modifications.
 - Location handling is single configured location only in v1.
+
+## Operational Docs
+- [Security Policy](./SECURITY.md)
+- [Deploy Checklist](./docs/deploy-checklist.md)
