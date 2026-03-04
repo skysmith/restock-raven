@@ -36,6 +36,12 @@ function toPositiveInt(value: string | undefined, fallback = 1): number {
   return Math.floor(n);
 }
 
+function formatCell(value: unknown): string {
+  if (value === null || value === undefined || value === "") return "-";
+  if (value instanceof Date) return value.toISOString();
+  return String(value);
+}
+
 function buildHref(params: {
   q?: string;
   status: SubscriptionStatusFilter;
@@ -325,7 +331,7 @@ export default async function AdminRestockPage(props: {
               <td>{subscription.variant_id}</td>
               <td>{subscription.status}</td>
               <td>{subscription.marketing_opt_in ? "opted-in" : "-"}</td>
-              <td>{subscription.notified_at ?? "-"}</td>
+              <td>{formatCell(subscription.notified_at)}</td>
               <td>
                 <form action={requeueAction}>
                   <input type="hidden" name="subscriptionId" value={subscription.id} />
@@ -359,12 +365,12 @@ export default async function AdminRestockPage(props: {
         <tbody>
           {events.map((event) => (
             <tr key={event.id} style={{ borderTop: "1px solid #ddd" }}>
-              <td>{event.occurred_at}</td>
+              <td>{formatCell(event.occurred_at)}</td>
               <td>{event.variant_id}</td>
               <td>{event.inventory_from ?? "-"}</td>
               <td>{event.inventory_to}</td>
               <td>{event.status}</td>
-              <td>{event.processed_at ?? "-"}</td>
+              <td>{formatCell(event.processed_at)}</td>
             </tr>
           ))}
         </tbody>
@@ -393,7 +399,7 @@ export default async function AdminRestockPage(props: {
         <tbody>
           {messageLog.map((msg) => (
             <tr key={msg.id} style={{ borderTop: "1px solid #ddd" }}>
-              <td>{msg.sent_at}</td>
+              <td>{formatCell(msg.sent_at)}</td>
               <td>{msg.channel}</td>
               <td>{msg.status}</td>
               <td>{msg.email ?? msg.phone ?? "-"}</td>
