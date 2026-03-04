@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/jobs/process?secret=$CRON_JOB_SECRET",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 16 * * *"
     }
   ]
 }
