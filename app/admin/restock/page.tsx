@@ -75,9 +75,9 @@ function Pager(props: {
   const clampedPage = Math.min(props.page, totalPages);
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "8px 0 14px" }}>
-      <strong>{props.label}</strong>
-      <span>
+    <div className="rr-pager">
+      <strong className="rr-pager-label">{props.label}</strong>
+      <span className="rr-pager-meta">
         Page {clampedPage} of {totalPages} ({props.total} rows)
       </span>
       {clampedPage > 1 ? <Link href={props.makeHref(clampedPage - 1)}>Prev</Link> : <span>Prev</span>}
@@ -237,7 +237,146 @@ export default async function AdminRestockPage(props: {
   };
 
   return (
-    <main style={{ fontFamily: "sans-serif", padding: 24 }}>
+    <main className="rr-admin">
+      <style>{`
+        .rr-admin {
+          --rr-bg: #ffffff;
+          --rr-text: #333333;
+          --rr-border: #dedede;
+          --rr-soft: #b5c2cd;
+          --rr-accent: #ffad64;
+          --rr-accent-border: #e09a57;
+          max-width: 1280px;
+          margin: 0 auto;
+          padding: 24px 20px 40px;
+          color: var(--rr-text);
+          font-family: var(--font-body-family, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+        }
+
+        .rr-admin h1 {
+          font-family: var(--font-heading-family, var(--font-body-family, inherit));
+          font-size: 48px;
+          line-height: 1.05;
+          margin: 0 0 18px;
+          letter-spacing: 0.01em;
+        }
+
+        .rr-admin h2 {
+          font-family: var(--font-heading-family, var(--font-body-family, inherit));
+          font-size: 44px;
+          line-height: 1.05;
+          margin: 24px 0 10px;
+          letter-spacing: 0.01em;
+        }
+
+        .rr-admin input[type="text"],
+        .rr-admin select {
+          min-height: 38px;
+          border: 1px solid var(--rr-border);
+          border-radius: 9px;
+          padding: 6px 10px;
+          background: #fff;
+          color: var(--rr-text);
+        }
+
+        .rr-admin input[type="text"]:focus-visible,
+        .rr-admin select:focus-visible,
+        .rr-admin button:focus-visible,
+        .rr-admin a:focus-visible {
+          outline: 2px solid var(--rr-soft);
+          outline-offset: 2px;
+        }
+
+        .rr-admin button {
+          min-height: 38px;
+          border: 1px solid var(--rr-accent-border);
+          border-radius: 9px;
+          padding: 0 12px;
+          background: var(--rr-accent);
+          color: #1a1a1a;
+          font-weight: 700;
+          letter-spacing: 0.01em;
+          cursor: pointer;
+        }
+
+        .rr-admin button:hover {
+          background: #ffb676;
+        }
+
+        .rr-kpis {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(220px, 1fr));
+          gap: 10px;
+          margin-bottom: 16px;
+        }
+
+        .rr-kpi {
+          border: 1px solid var(--rr-border);
+          border-radius: 12px;
+          padding: 12px;
+          background: linear-gradient(180deg, #ffffff 0%, #fbfbfb 100%);
+        }
+
+        .rr-filters,
+        .rr-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          margin-bottom: 16px;
+        }
+
+        .rr-pager {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin: 8px 0 14px;
+        }
+
+        .rr-pager-label {
+          font-size: 34px;
+          line-height: 1.05;
+        }
+
+        .rr-pager-meta {
+          opacity: 0.88;
+        }
+
+        .rr-admin table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 24px;
+        }
+
+        .rr-admin th {
+          text-align: left;
+          border-bottom: 2px solid var(--rr-border);
+          padding: 10px 8px;
+          font-size: 15px;
+          white-space: nowrap;
+        }
+
+        .rr-admin td {
+          border-top: 1px solid var(--rr-border);
+          padding: 10px 8px;
+          vertical-align: top;
+        }
+
+        .rr-admin tr:hover td {
+          background: #fcfcfc;
+        }
+
+        .rr-admin a {
+          color: #2e4053;
+          text-underline-offset: 2px;
+        }
+
+        @media (max-width: 900px) {
+          .rr-admin h1 { font-size: 40px; }
+          .rr-admin h2 { font-size: 34px; }
+          .rr-kpis { grid-template-columns: 1fr; }
+          .rr-pager { flex-wrap: wrap; }
+        }
+      `}</style>
       <h1>Restock Raven Admin</h1>
       {dashboardError ? (
         <div
@@ -253,29 +392,22 @@ export default async function AdminRestockPage(props: {
         </div>
       ) : null}
 
-      <section
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, minmax(220px, 1fr))",
-          gap: 10,
-          marginBottom: 16
-        }}
-      >
-        <div style={{ border: "1px solid #ddd", borderRadius: 8, padding: 10 }}>
+      <section className="rr-kpis">
+        <div className="rr-kpi">
           <strong>Subscriptions</strong>
           <div>Total: {subscriptionCounts.total ?? 0}</div>
           <div>Active: {subscriptionCounts.active ?? 0}</div>
           <div>Notified: {subscriptionCounts.notified ?? 0}</div>
           <div>Unsubscribed: {subscriptionCounts.unsubscribed ?? 0}</div>
         </div>
-        <div style={{ border: "1px solid #ddd", borderRadius: 8, padding: 10 }}>
+        <div className="rr-kpi">
           <strong>Events</strong>
           <div>Total: {eventCounts.total ?? 0}</div>
           <div>Queued: {eventCounts.queued ?? 0}</div>
           <div>Processed: {eventCounts.processed ?? 0}</div>
           <div>Ignored: {eventCounts.ignored ?? 0}</div>
         </div>
-        <div style={{ border: "1px solid #ddd", borderRadius: 8, padding: 10 }}>
+        <div className="rr-kpi">
           <strong>Messages</strong>
           <div>Total: {messageCounts.total ?? 0}</div>
           <div>Sent: {messageCounts.sent ?? 0}</div>
@@ -283,7 +415,7 @@ export default async function AdminRestockPage(props: {
         </div>
       </section>
 
-      <form method="GET" style={{ marginBottom: 16, display: "flex", flexWrap: "wrap", gap: 8 }}>
+      <form method="GET" className="rr-filters">
         <input
           type="text"
           name="q"
@@ -318,7 +450,7 @@ export default async function AdminRestockPage(props: {
         <Link href={csvHref}>Export CSV</Link>
       </form>
 
-      <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+      <div className="rr-actions">
         <form action={triggerVariantAction}>
           <input
             type="text"
@@ -356,7 +488,7 @@ export default async function AdminRestockPage(props: {
         pageSize={SUB_PAGE_SIZE}
         makeHref={(page) => buildHref({ ...baseParams, subPage: page })}
       />
-      <table cellPadding={8} style={{ borderCollapse: "collapse", width: "100%", marginBottom: 24 }}>
+      <table>
         <thead>
           <tr>
             <th align="left">Email</th>
@@ -370,7 +502,7 @@ export default async function AdminRestockPage(props: {
         </thead>
         <tbody>
           {subscriptions.map((subscription) => (
-            <tr key={subscription.id} style={{ borderTop: "1px solid #ddd" }}>
+            <tr key={subscription.id}>
               <td>{subscription.email ?? "-"}</td>
               <td>{subscription.phone ?? "-"}</td>
               <td>{subscription.variant_id}</td>
@@ -396,7 +528,7 @@ export default async function AdminRestockPage(props: {
         pageSize={EVENT_PAGE_SIZE}
         makeHref={(page) => buildHref({ ...baseParams, eventPage: page })}
       />
-      <table cellPadding={8} style={{ borderCollapse: "collapse", width: "100%", marginBottom: 24 }}>
+      <table>
         <thead>
           <tr>
             <th align="left">Occurred</th>
@@ -409,7 +541,7 @@ export default async function AdminRestockPage(props: {
         </thead>
         <tbody>
           {events.map((event) => (
-            <tr key={event.id} style={{ borderTop: "1px solid #ddd" }}>
+            <tr key={event.id}>
               <td>{formatCell(event.occurred_at)}</td>
               <td>{event.variant_id}</td>
               <td>{event.inventory_from ?? "-"}</td>
@@ -429,7 +561,7 @@ export default async function AdminRestockPage(props: {
         pageSize={MSG_PAGE_SIZE}
         makeHref={(page) => buildHref({ ...baseParams, msgPage: page })}
       />
-      <table cellPadding={8} style={{ borderCollapse: "collapse", width: "100%" }}>
+      <table>
         <thead>
           <tr>
             <th align="left">Sent At</th>
@@ -443,7 +575,7 @@ export default async function AdminRestockPage(props: {
         </thead>
         <tbody>
           {messageLog.map((msg) => (
-            <tr key={msg.id} style={{ borderTop: "1px solid #ddd" }}>
+            <tr key={msg.id}>
               <td>{formatCell(msg.sent_at)}</td>
               <td>{msg.channel}</td>
               <td>{msg.status}</td>
