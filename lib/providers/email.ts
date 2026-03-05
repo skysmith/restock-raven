@@ -1,6 +1,11 @@
 import { Resend } from "resend";
 import { getEnv } from "@/lib/utils/env";
 
+function formatFromAddress(rawFrom: string): string {
+  if (rawFrom.includes("<") && rawFrom.includes(">")) return rawFrom;
+  return `Clementine Kids <${rawFrom}>`;
+}
+
 export async function sendRestockEmail(params: {
   to: string;
   variantId: string;
@@ -13,6 +18,7 @@ export async function sendRestockEmail(params: {
 }): Promise<string | null> {
   const resend = new Resend(getEnv("RESEND_API_KEY"));
   const baseUrl = getEnv("APP_BASE_URL");
+  const from = formatFromAddress(getEnv("RESEND_FROM"));
   const unsubscribeUrl = `${baseUrl}/api/restock/unsubscribe?t=${encodeURIComponent(params.unsubscribeToken)}`;
   const productTitle = params.productTitle?.trim() || "Your item";
   const variantLine = params.variantTitle ? `<p style="margin: 0 0 14px; color: #4a5560;">${params.variantTitle}</p>` : "";
@@ -27,13 +33,12 @@ export async function sendRestockEmail(params: {
     : "";
 
   const result = await resend.emails.send({
-    from: getEnv("RESEND_FROM"),
+    from,
     to: params.to,
     subject: `${productTitle} is back in stock`,
     html: `
       <div style="background:#f6f7f8;padding:20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
         <div style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #ececec;border-radius:14px;padding:22px;">
-          <p style="margin:0 0 8px;font-size:14px;color:#6b7280;">Restock Raven for Clementine Kids</p>
           <h1 style="margin:0 0 10px;font-size:24px;line-height:1.2;color:#1f2933;">Good news - back in stock</h1>
           <h2 style="margin:0 0 8px;font-size:20px;line-height:1.25;color:#111827;">${productTitle}</h2>
           ${variantLine}
