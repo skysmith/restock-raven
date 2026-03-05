@@ -295,6 +295,11 @@ export default async function AdminRestockPage(props: {
           color: var(--rr-text);
         }
 
+        .rr-filters input[type="text"] {
+          background: #eef6ff;
+          border-color: #d8e4f3;
+        }
+
         .rr-filters select:nth-of-type(1) {
           background: #fff3f4;
           border-color: #f2d9de;
@@ -337,6 +342,16 @@ export default async function AdminRestockPage(props: {
 
         .rr-admin button:hover {
           background: #ffb676;
+        }
+
+        .rr-filters button[type="submit"] {
+          background: #e7f6ef;
+          border-color: #cfe6db;
+          color: #253648;
+        }
+
+        .rr-filters button[type="submit"]:hover {
+          background: #dcf1e7;
         }
 
         .rr-kpis {
@@ -386,6 +401,44 @@ export default async function AdminRestockPage(props: {
           border-radius: 10px;
           padding: 8px;
           background: #fff;
+        }
+
+        .rr-actions .rr-action-card input[type="text"] {
+          background: #fff3f4;
+          border-color: #f2d9de;
+        }
+
+        .rr-actions .rr-action-card:nth-child(2) input[type="text"] {
+          background: #fff7ef;
+          border-color: #f1dfcc;
+        }
+
+        .rr-actions .rr-action-card:nth-child(1) button {
+          background: #fffbea;
+          border-color: #f0e8c8;
+          color: #253648;
+        }
+
+        .rr-actions .rr-action-card:nth-child(2) button {
+          background: #f1f9ef;
+          border-color: #d8e8d3;
+          color: #253648;
+        }
+
+        .rr-actions .rr-action-card:nth-child(3) button {
+          background: #edf4ff;
+          border-color: #d8e4f3;
+          color: #253648;
+        }
+
+        .rr-actions .rr-action-card:nth-child(4) button {
+          background: #f5efff;
+          border-color: #e1d6f1;
+          color: #253648;
+        }
+
+        .rr-actions .rr-action-card button:hover {
+          filter: brightness(0.98);
         }
 
         .rr-help {
