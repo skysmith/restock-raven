@@ -65,7 +65,6 @@ function buildHref(params: {
 }
 
 function Pager(props: {
-  label: string;
   page: number;
   total: number;
   pageSize: number;
@@ -76,7 +75,6 @@ function Pager(props: {
 
   return (
     <div className="rr-pager">
-      <strong className="rr-pager-label">{props.label}</strong>
       <span className="rr-pager-meta">
         Page {clampedPage} of {totalPages} ({props.total} rows)
       </span>
@@ -456,11 +454,6 @@ export default async function AdminRestockPage(props: {
           margin: 8px 0 14px;
         }
 
-        .rr-pager-label {
-          font-size: 34px;
-          line-height: 1.05;
-        }
-
         .rr-pager-meta {
           opacity: 0.88;
         }
@@ -636,7 +629,6 @@ export default async function AdminRestockPage(props: {
 
       <h2>Subscriptions</h2>
       <Pager
-        label="Subscriptions"
         page={currentSubPage}
         total={subscriptionsTotal}
         pageSize={SUB_PAGE_SIZE}
@@ -676,7 +668,6 @@ export default async function AdminRestockPage(props: {
 
       <h2>Recent Events</h2>
       <Pager
-        label="Events"
         page={currentEventPage}
         total={eventsTotal}
         pageSize={EVENT_PAGE_SIZE}
@@ -709,7 +700,6 @@ export default async function AdminRestockPage(props: {
 
       <h2>Message Log</h2>
       <Pager
-        label="Messages"
         page={currentMsgPage}
         total={messageLogTotal}
         pageSize={MSG_PAGE_SIZE}
