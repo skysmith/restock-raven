@@ -295,6 +295,26 @@ export default async function AdminRestockPage(props: {
           color: var(--rr-text);
         }
 
+        .rr-filters select:nth-of-type(1) {
+          background: #fff3f4;
+          border-color: #f2d9de;
+        }
+
+        .rr-filters select:nth-of-type(2) {
+          background: #fff7ef;
+          border-color: #f1dfcc;
+        }
+
+        .rr-filters select:nth-of-type(3) {
+          background: #fffbea;
+          border-color: #f0e8c8;
+        }
+
+        .rr-filters select:nth-of-type(4) {
+          background: #f1f9ef;
+          border-color: #d8e8d3;
+        }
+
         .rr-admin input[type="text"]:focus-visible,
         .rr-admin select:focus-visible,
         .rr-admin button:focus-visible,
