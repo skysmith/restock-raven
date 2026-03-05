@@ -268,197 +268,175 @@ export default async function AdminRestockPage(props: {
     <main className="rr-admin">
       <style>{`
         .rr-admin {
-          --rr-bg: #ffffff;
-          --rr-text: #333333;
-          --rr-border: #dedede;
-          --rr-soft: #b5c2cd;
-          --rr-accent: #ffad64;
-          --rr-accent-border: #e09a57;
-          max-width: 1280px;
-          margin: 0 auto;
-          padding: 24px 20px 40px;
+          --rr-max: 1120px;
+          --rr-radius: 16px;
+          --rr-radius-sm: 12px;
+          --rr-gap: 14px;
+          --rr-font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+          --rr-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono";
+          --rr-bg: #f7f8fb;
+          --rr-surface: rgba(255, 255, 255, 0.85);
+          --rr-surface-solid: #ffffff;
+          --rr-border: rgba(16, 24, 40, 0.1);
+          --rr-text: #0b1220;
+          --rr-muted: rgba(11, 18, 32, 0.65);
+          --rr-faint: rgba(11, 18, 32, 0.45);
+          --rr-primary: #2f6bff;
+          --rr-primary-2: #6aa6ff;
+          --rr-danger: #ff4d6d;
+          --rr-shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
+          --rr-shadow: 0 10px 30px rgba(16, 24, 40, 0.1);
+          --rr-shadow-lg: 0 25px 60px rgba(16, 24, 40, 0.16);
+          font-family: var(--rr-font);
           color: var(--rr-text);
-          font-family: var(--font-body-family, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+          background:
+            radial-gradient(1200px 500px at 10% -10%, rgba(47, 107, 255, 0.18), transparent 60%),
+            radial-gradient(900px 450px at 95% 10%, rgba(245, 158, 11, 0.14), transparent 55%),
+            radial-gradient(900px 450px at 60% 110%, rgba(34, 197, 94, 0.1), transparent 55%),
+            var(--rr-bg);
+          min-height: 100vh;
+          padding: 28px 18px 60px;
+        }
+
+        .rr-admin .rr-container {
+          max-width: var(--rr-max);
+          margin: 0 auto;
         }
 
         .rr-admin h1 {
-          font-family: var(--font-heading-family, var(--font-body-family, inherit));
           font-size: 48px;
           line-height: 1.05;
-          margin: 0 0 18px;
-          letter-spacing: 0.01em;
+          letter-spacing: -0.03em;
+          margin: 6px 0 18px;
         }
 
         .rr-admin h2 {
-          font-family: var(--font-heading-family, var(--font-body-family, inherit));
-          font-size: 44px;
-          line-height: 1.05;
-          margin: 24px 0 10px;
-          letter-spacing: 0.01em;
+          font-size: 30px;
+          line-height: 1.15;
+          margin: 22px 0 8px;
+          letter-spacing: -0.02em;
         }
 
-        .rr-admin input[type="text"],
-        .rr-admin select {
-          min-height: 38px;
+        .rr-admin .rr-title {
+          font-size: 14px;
+          font-weight: 650;
+          letter-spacing: 0.02em;
+          color: var(--rr-muted);
+          text-transform: uppercase;
+          margin: 0 0 10px;
+        }
+
+        .rr-admin .rr-card {
+          background: var(--rr-surface);
           border: 1px solid var(--rr-border);
-          border-radius: 9px;
-          padding: 6px 10px;
-          background: #fff;
+          border-radius: var(--rr-radius);
+          box-shadow: var(--rr-shadow);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+        }
+
+        .rr-admin .rr-card--padded { padding: 18px; }
+        .rr-admin .rr-card--tight { padding: 14px; }
+
+        .rr-admin .rr-grid {
+          display: grid;
+          gap: var(--rr-gap);
+        }
+
+        .rr-admin .rr-grid--stats {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .rr-admin .rr-grid--actions {
+          grid-template-columns: 1.2fr 1fr 0.9fr 0.9fr;
+        }
+
+        .rr-admin .rr-kpi > div {
+          color: var(--rr-faint);
+          font-size: 13px;
+        }
+
+        .rr-admin .rr-kpi > div b,
+        .rr-admin .rr-kpi strong {
           color: var(--rr-text);
         }
 
-        .rr-filters input[type="text"] {
-          background: #eef6ff;
-          border-color: #d8e4f3;
-        }
-
-        .rr-filters select:nth-of-type(1) {
-          background: #fff3f4;
-          border-color: #f2d9de;
-        }
-
-        .rr-filters select:nth-of-type(2) {
-          background: #fff7ef;
-          border-color: #f1dfcc;
-        }
-
-        .rr-filters select:nth-of-type(3) {
-          background: #fffbea;
-          border-color: #f0e8c8;
-        }
-
-        .rr-filters select:nth-of-type(4) {
-          background: #f1f9ef;
-          border-color: #d8e8d3;
-        }
-
-        .rr-admin input[type="text"]:focus-visible,
-        .rr-admin select:focus-visible,
-        .rr-admin button:focus-visible,
-        .rr-admin a:focus-visible {
-          outline: 2px solid var(--rr-soft);
-          outline-offset: 2px;
-        }
-
-        .rr-admin button {
-          min-height: 38px;
-          border: 1px solid var(--rr-accent-border);
-          border-radius: 9px;
-          padding: 0 12px;
-          background: var(--rr-accent);
-          color: #1a1a1a;
-          font-weight: 700;
-          letter-spacing: 0.01em;
-          cursor: pointer;
-        }
-
-        .rr-admin button:hover {
-          background: #ffb676;
-        }
-
-        .rr-filters button[type="submit"] {
-          background: #e7f6ef;
-          border-color: #cfe6db;
-          color: #253648;
-        }
-
-        .rr-filters button[type="submit"]:hover {
-          background: #dcf1e7;
-        }
-
-        .rr-kpis {
+        .rr-admin .rr-controls {
           display: grid;
-          grid-template-columns: repeat(3, minmax(220px, 1fr));
+          grid-template-columns: 1.6fr repeat(4, minmax(0, 1fr)) auto auto;
           gap: 10px;
-          margin-bottom: 16px;
+          align-items: center;
         }
 
-        .rr-kpi {
-          border: 1px solid var(--rr-border);
+        .rr-admin input[type="text"],
+        .rr-admin input[type="email"],
+        .rr-admin input[type="number"],
+        .rr-admin select {
+          width: 100%;
+          height: 44px;
+          padding: 0 12px;
           border-radius: 12px;
-          padding: 12px;
-          background: linear-gradient(180deg, #ffffff 0%, #fbfbfb 100%);
-        }
-
-        .rr-filters,
-        .rr-actions {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-          margin-bottom: 16px;
-        }
-
-        .rr-guide {
           border: 1px solid var(--rr-border);
+          background: rgba(255, 255, 255, 0.92);
+          color: var(--rr-text);
+          box-shadow: var(--rr-shadow-sm);
+          outline: none;
+          transition: box-shadow 0.15s ease, border-color 0.15s ease, transform 0.08s ease;
+        }
+
+        .rr-admin input::placeholder { color: rgba(11, 18, 32, 0.4); }
+
+        .rr-admin input:focus,
+        .rr-admin select:focus {
+          border-color: rgba(47, 107, 255, 0.45);
+          box-shadow: 0 0 0 4px rgba(47, 107, 255, 0.15), var(--rr-shadow-sm);
+        }
+
+        .rr-admin select {
+          appearance: none;
+          background-image:
+            linear-gradient(45deg, transparent 50%, rgba(11, 18, 32, 0.55) 50%),
+            linear-gradient(135deg, rgba(11, 18, 32, 0.55) 50%, transparent 50%);
+          background-position: calc(100% - 18px) 18px, calc(100% - 12px) 18px;
+          background-size: 6px 6px, 6px 6px;
+          background-repeat: no-repeat;
+          padding-right: 34px;
+        }
+
+        .rr-admin .rr-btn {
+          height: 44px;
+          padding: 0 14px;
           border-radius: 12px;
-          padding: 12px 14px;
-          margin: 0 0 16px;
-          background: linear-gradient(180deg, #ffffff 0%, #fbfbfb 100%);
-        }
-
-        .rr-guide h3 {
-          margin: 0 0 8px;
-          font-size: 18px;
-          line-height: 1.2;
-          font-family: var(--font-heading-family, var(--font-body-family, inherit));
-        }
-
-        .rr-guide ol {
-          margin: 0;
-          padding-left: 18px;
-        }
-
-        .rr-action-card {
           border: 1px solid var(--rr-border);
-          border-radius: 10px;
-          padding: 8px;
-          background: #fff;
+          background: rgba(255, 255, 255, 0.92);
+          color: var(--rr-text);
+          font-weight: 650;
+          box-shadow: var(--rr-shadow-sm);
+          cursor: pointer;
+          transition: transform 0.08s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+          white-space: nowrap;
         }
 
-        .rr-actions .rr-action-card input[type="text"] {
-          background: #fff3f4;
-          border-color: #f2d9de;
+        .rr-admin .rr-btn:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 10px 22px rgba(16, 24, 40, 0.12);
         }
 
-        .rr-actions .rr-action-card:nth-child(2) input[type="text"] {
-          background: #fff7ef;
-          border-color: #f1dfcc;
+        .rr-admin .rr-btn:active {
+          transform: translateY(0);
+          box-shadow: var(--rr-shadow-sm);
         }
 
-        .rr-actions .rr-action-card:nth-child(1) button {
-          background: #fffbea;
-          border-color: #f0e8c8;
-          color: #253648;
+        .rr-admin .rr-btn--primary {
+          background: linear-gradient(135deg, var(--rr-primary), var(--rr-primary-2));
+          border-color: rgba(47, 107, 255, 0.35);
+          color: #fff;
         }
 
-        .rr-actions .rr-action-card:nth-child(2) button {
-          background: #f1f9ef;
-          border-color: #d8e8d3;
-          color: #253648;
-        }
-
-        .rr-actions .rr-action-card:nth-child(3) button {
-          background: #edf4ff;
-          border-color: #d8e4f3;
-          color: #253648;
-        }
-
-        .rr-actions .rr-action-card:nth-child(4) button {
-          background: #f5efff;
-          border-color: #e1d6f1;
-          color: #253648;
-        }
-
-        .rr-actions .rr-action-card button:hover {
-          filter: brightness(0.98);
-        }
-
-        .rr-help {
-          margin-top: 6px;
-          font-size: 12px;
-          color: #4a5764;
-          max-width: 360px;
-          line-height: 1.35;
+        .rr-admin .rr-btn--danger {
+          background: linear-gradient(135deg, #ff4d6d, #ff8aa0);
+          border-color: rgba(255, 77, 109, 0.35);
+          color: #fff;
         }
 
         .rr-pager {
@@ -466,66 +444,112 @@ export default async function AdminRestockPage(props: {
           align-items: center;
           gap: 10px;
           margin: 8px 0 14px;
+          color: var(--rr-muted);
         }
 
-        .rr-pager-meta {
-          opacity: 0.88;
+        .rr-admin .rr-pager a {
+          color: var(--rr-primary);
+          text-decoration: none;
+          font-weight: 650;
         }
 
         .rr-admin table {
           width: 100%;
-          border-collapse: collapse;
+          border-collapse: separate;
+          border-spacing: 0;
+          overflow: hidden;
+          border: 1px solid var(--rr-border);
+          border-radius: var(--rr-radius);
+          background: var(--rr-surface-solid);
           margin-bottom: 24px;
         }
 
-        .rr-admin th {
+        .rr-admin thead th {
           text-align: left;
-          border-bottom: 2px solid var(--rr-border);
-          padding: 10px 8px;
-          font-size: 15px;
+          font-size: 12px;
+          letter-spacing: 0.02em;
+          color: var(--rr-muted);
+          font-weight: 700;
+          padding: 12px 14px;
+          border-bottom: 1px solid var(--rr-border);
+          background: rgba(247, 248, 251, 0.8);
           white-space: nowrap;
         }
 
-        .rr-admin td {
-          border-top: 1px solid var(--rr-border);
-          padding: 10px 8px;
+        .rr-admin tbody td {
+          padding: 12px 14px;
+          border-bottom: 1px solid rgba(16, 24, 40, 0.06);
+          font-size: 14px;
           vertical-align: top;
         }
 
-        .rr-admin tr:hover td {
-          background: #fcfcfc;
+        .rr-admin tbody tr:hover td {
+          background: rgba(47, 107, 255, 0.06);
+        }
+
+        .rr-admin .rr-mono {
+          font-family: var(--rr-mono);
+          font-size: 13px;
+        }
+
+        .rr-admin .rr-help {
+          margin-top: 6px;
+          font-size: 12px;
+          color: var(--rr-muted);
+          line-height: 1.35;
         }
 
         .rr-admin a {
-          color: #2e4053;
-          text-underline-offset: 2px;
+          color: var(--rr-primary);
+          text-decoration: none;
+          font-weight: 650;
         }
 
-        @media (max-width: 900px) {
+        .rr-admin a:hover { text-decoration: underline; }
+
+        .rr-admin .rr-guide {
+          margin: 0;
+          padding-left: 18px;
+          color: var(--rr-muted);
+        }
+
+        .rr-admin .rr-guide b,
+        .rr-admin .rr-guide strong { color: var(--rr-text); }
+
+        .rr-admin form.inline {
+          display: inline;
+        }
+
+        .rr-admin .rr-action-form {
+          display: flex;
+          gap: 10px;
+          align-items: center;
+        }
+
+        .rr-admin .rr-action-form input[type="text"] {
+          max-width: 220px;
+        }
+
+        @media (max-width: 980px) {
+          .rr-admin .rr-grid--stats,
+          .rr-admin .rr-grid--actions,
+          .rr-admin .rr-controls {
+            grid-template-columns: 1fr;
+          }
           .rr-admin h1 { font-size: 40px; }
-          .rr-admin h2 { font-size: 34px; }
-          .rr-kpis { grid-template-columns: 1fr; }
-          .rr-pager { flex-wrap: wrap; }
         }
       `}</style>
+      <div className="rr-container">
       <h1>Restock Raven Admin</h1>
       {dashboardError ? (
-        <div
-          style={{
-            background: "#fff3cd",
-            border: "1px solid #ffe69c",
-            borderRadius: 8,
-            padding: 10,
-            marginBottom: 12
-          }}
-        >
+        <div className="rr-card rr-card--tight">
           Dashboard data failed to load: {dashboardError}
         </div>
       ) : null}
 
-      <section className="rr-guide" aria-label="Manual restock instructions">
-        <h3>Manual Restock Quick Guide</h3>
-        <ol>
+      <section className="rr-card rr-card--padded" aria-label="Manual restock instructions">
+        <h3 className="rr-title">Manual Restock Quick Guide</h3>
+        <ol className="rr-guide">
           <li>Find the variant ID from your product URL or the variants table in Shopify admin.</li>
           <li>Paste the variant ID and click <strong>Trigger + Process Now</strong> for one-step send testing.</li>
           <li>Check <strong>Recent Events</strong> for `processed` and <strong>Message Log</strong> for `sent` or `failed`.</li>
@@ -533,22 +557,22 @@ export default async function AdminRestockPage(props: {
         </ol>
       </section>
 
-      <section className="rr-kpis">
-        <div className="rr-kpi">
+      <section className="rr-grid rr-grid--stats">
+        <div className="rr-kpi rr-card rr-card--tight">
           <strong>Subscriptions</strong>
           <div>Total: {subscriptionCounts.total ?? 0}</div>
           <div>Active: {subscriptionCounts.active ?? 0}</div>
           <div>Notified: {subscriptionCounts.notified ?? 0}</div>
           <div>Unsubscribed: {subscriptionCounts.unsubscribed ?? 0}</div>
         </div>
-        <div className="rr-kpi">
+        <div className="rr-kpi rr-card rr-card--tight">
           <strong>Events</strong>
           <div>Total: {eventCounts.total ?? 0}</div>
           <div>Queued: {eventCounts.queued ?? 0}</div>
           <div>Processed: {eventCounts.processed ?? 0}</div>
           <div>Ignored: {eventCounts.ignored ?? 0}</div>
         </div>
-        <div className="rr-kpi">
+        <div className="rr-kpi rr-card rr-card--tight">
           <strong>Messages</strong>
           <div>Total: {messageCounts.total ?? 0}</div>
           <div>Sent: {messageCounts.sent ?? 0}</div>
@@ -556,13 +580,12 @@ export default async function AdminRestockPage(props: {
         </div>
       </section>
 
-      <form method="GET" className="rr-filters">
+      <form method="GET" className="rr-controls rr-card rr-card--padded">
         <input
           type="text"
           name="q"
           defaultValue={q ?? ""}
           placeholder="Search email, phone, variant"
-          style={{ width: 280 }}
         />
         <select name="status" defaultValue={status}>
           <option value="all">All subscriptions</option>
@@ -587,7 +610,7 @@ export default async function AdminRestockPage(props: {
           <option value="email">Email</option>
           <option value="sms">SMS</option>
         </select>
-        <button type="submit">Apply Filters</button>
+        <button className="rr-btn rr-btn--primary" type="submit">Apply Filters</button>
         <Link href={csvHref}>Export CSV</Link>
         {showDebug ? (
           <Link href={buildHref({ ...baseParams, debug: false, eventPage: 1, msgPage: 1 })}>Hide debug tables</Link>
@@ -596,49 +619,47 @@ export default async function AdminRestockPage(props: {
         )}
       </form>
 
-      <div className="rr-actions">
-        <div className="rr-action-card">
-          <form action={triggerVariantAction}>
+      <div className="rr-grid rr-grid--actions">
+        <div className="rr-action-card rr-card rr-card--tight">
+          <form className="rr-action-form" action={triggerVariantAction}>
             <input
               type="text"
               name="variantId"
               placeholder="Variant ID"
-              style={{ width: 200, marginRight: 8 }}
             />
-            <button type="submit" title="Adds an event to queue only. Does not send until processed.">
+            <button className="rr-btn" type="submit" title="Adds an event to queue only. Does not send until processed.">
               Queue Manual Restock Event
             </button>
           </form>
           <p className="rr-help">Queue only. Use this if you want to line up multiple variants first.</p>
         </div>
 
-        <div className="rr-action-card">
-          <form action={triggerAndProcessAction}>
+        <div className="rr-action-card rr-card rr-card--tight">
+          <form className="rr-action-form" action={triggerAndProcessAction}>
             <input
               type="text"
               name="variantId"
               placeholder="Variant ID"
-              style={{ width: 200, marginRight: 8 }}
             />
-            <button type="submit" title="Queues one variant event and immediately processes sends.">
+            <button className="rr-btn rr-btn--primary" type="submit" title="Queues one variant event and immediately processes sends.">
               Trigger + Process Now
             </button>
           </form>
           <p className="rr-help">Fastest test button. One click to queue and send.</p>
         </div>
 
-        <div className="rr-action-card">
-          <form action={processNowAction}>
-            <button type="submit" title="Processes all currently queued events and sends notifications.">
+        <div className="rr-action-card rr-card rr-card--tight">
+          <form className="inline" action={processNowAction}>
+            <button className="rr-btn" type="submit" title="Processes all currently queued events and sends notifications.">
               Process Queue Now
             </button>
           </form>
           <p className="rr-help">Use after queueing events if they have not been processed yet.</p>
         </div>
 
-        <div className="rr-action-card">
-          <form action={ensureWebhookAction}>
-            <button type="submit" title="Creates or verifies inventory webhook registration in Shopify.">
+        <div className="rr-action-card rr-card rr-card--tight">
+          <form className="inline" action={ensureWebhookAction}>
+            <button className="rr-btn rr-btn--danger" type="submit" title="Creates or verifies inventory webhook registration in Shopify.">
               Ensure Shopify Inventory Webhook
             </button>
           </form>
@@ -682,7 +703,7 @@ export default async function AdminRestockPage(props: {
                 <td>
                   <form action={requeueAction}>
                     <input type="hidden" name="subscriptionId" value={subscription.id} />
-                    <button type="submit">Requeue</button>
+                    <button className="rr-btn" type="submit">Requeue</button>
                   </form>
                 </td>
               </tr>
@@ -760,6 +781,7 @@ export default async function AdminRestockPage(props: {
           </table>
         </>
       ) : null}
+      </div>
     </main>
   );
 }
