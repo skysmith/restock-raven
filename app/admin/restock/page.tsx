@@ -48,6 +48,7 @@ function buildHref(params: {
   eventStatus: EventStatusFilter;
   msgStatus: MessageStatusFilter;
   channel: ChannelFilter;
+  debug?: boolean;
   subPage: number;
   eventPage: number;
   msgPage: number;
@@ -58,6 +59,7 @@ function buildHref(params: {
   if (params.eventStatus !== "all") qs.set("eventStatus", params.eventStatus);
   if (params.msgStatus !== "all") qs.set("msgStatus", params.msgStatus);
   if (params.channel !== "all") qs.set("channel", params.channel);
+  if (params.debug) qs.set("debug", "1");
   if (params.subPage > 1) qs.set("subPage", String(params.subPage));
   if (params.eventPage > 1) qs.set("eventPage", String(params.eventPage));
   if (params.msgPage > 1) qs.set("msgPage", String(params.msgPage));
@@ -163,16 +165,17 @@ async function ensureWebhookAction(): Promise<void> {
 }
 
 export default async function AdminRestockPage(props: {
-  searchParams: Promise<{
-    q?: string;
-    status?: SubscriptionStatusFilter;
-    eventStatus?: EventStatusFilter;
-    msgStatus?: MessageStatusFilter;
-    channel?: ChannelFilter;
-    subPage?: string;
-    eventPage?: string;
-    msgPage?: string;
-  }>;
+    searchParams: Promise<{
+      q?: string;
+      status?: SubscriptionStatusFilter;
+      eventStatus?: EventStatusFilter;
+      msgStatus?: MessageStatusFilter;
+      channel?: ChannelFilter;
+      debug?: string;
+      subPage?: string;
+      eventPage?: string;
+      msgPage?: string;
+    }>;
 }) {
   const {
     q,
@@ -180,10 +183,12 @@ export default async function AdminRestockPage(props: {
     eventStatus = "all",
     msgStatus = "all",
     channel = "all",
+    debug,
     subPage,
     eventPage,
     msgPage
   } = await props.searchParams;
+  const showDebug = debug === "1";
 
   const currentSubPage = toPositiveInt(subPage, 1);
   const currentEventPage = toPositiveInt(eventPage, 1);
@@ -245,6 +250,7 @@ export default async function AdminRestockPage(props: {
     eventStatus,
     msgStatus,
     channel,
+    debug: showDebug,
     subPage: currentSubPage,
     eventPage: currentEventPage,
     msgPage: currentMsgPage
@@ -575,6 +581,11 @@ export default async function AdminRestockPage(props: {
         </select>
         <button type="submit">Apply Filters</button>
         <Link href={csvHref}>Export CSV</Link>
+        {showDebug ? (
+          <Link href={buildHref({ ...baseParams, debug: false, eventPage: 1, msgPage: 1 })}>Hide debug tables</Link>
+        ) : (
+          <Link href={buildHref({ ...baseParams, debug: true })}>Show debug tables</Link>
+        )}
       </form>
 
       <div className="rr-actions">
@@ -666,71 +677,75 @@ export default async function AdminRestockPage(props: {
         </tbody>
       </table>
 
-      <h2>Recent Events</h2>
-      <Pager
-        page={currentEventPage}
-        total={eventsTotal}
-        pageSize={EVENT_PAGE_SIZE}
-        makeHref={(page) => buildHref({ ...baseParams, eventPage: page })}
-      />
-      <table>
-        <thead>
-          <tr>
-            <th align="left">Occurred</th>
-            <th align="left">Variant</th>
-            <th align="left">From</th>
-            <th align="left">To</th>
-            <th align="left">Status</th>
-            <th align="left">Processed</th>
-          </tr>
-        </thead>
-        <tbody>
-          {events.map((event) => (
-            <tr key={event.id}>
-              <td>{formatCell(event.occurred_at)}</td>
-              <td>{event.variant_id}</td>
-              <td>{event.inventory_from ?? "-"}</td>
-              <td>{event.inventory_to}</td>
-              <td>{event.status}</td>
-              <td>{formatCell(event.processed_at)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {showDebug ? (
+        <>
+          <h2>Recent Events</h2>
+          <Pager
+            page={currentEventPage}
+            total={eventsTotal}
+            pageSize={EVENT_PAGE_SIZE}
+            makeHref={(page) => buildHref({ ...baseParams, eventPage: page })}
+          />
+          <table>
+            <thead>
+              <tr>
+                <th align="left">Occurred</th>
+                <th align="left">Variant</th>
+                <th align="left">From</th>
+                <th align="left">To</th>
+                <th align="left">Status</th>
+                <th align="left">Processed</th>
+              </tr>
+            </thead>
+            <tbody>
+              {events.map((event) => (
+                <tr key={event.id}>
+                  <td>{formatCell(event.occurred_at)}</td>
+                  <td>{event.variant_id}</td>
+                  <td>{event.inventory_from ?? "-"}</td>
+                  <td>{event.inventory_to}</td>
+                  <td>{event.status}</td>
+                  <td>{formatCell(event.processed_at)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
 
-      <h2>Message Log</h2>
-      <Pager
-        page={currentMsgPage}
-        total={messageLogTotal}
-        pageSize={MSG_PAGE_SIZE}
-        makeHref={(page) => buildHref({ ...baseParams, msgPage: page })}
-      />
-      <table>
-        <thead>
-          <tr>
-            <th align="left">Sent At</th>
-            <th align="left">Channel</th>
-            <th align="left">Status</th>
-            <th align="left">Contact</th>
-            <th align="left">Variant</th>
-            <th align="left">Provider ID</th>
-            <th align="left">Error</th>
-          </tr>
-        </thead>
-        <tbody>
-          {messageLog.map((msg) => (
-            <tr key={msg.id}>
-              <td>{formatCell(msg.sent_at)}</td>
-              <td>{msg.channel}</td>
-              <td>{msg.status}</td>
-              <td>{msg.email ?? msg.phone ?? "-"}</td>
-              <td>{msg.variant_id}</td>
-              <td>{msg.provider_message_id ?? "-"}</td>
-              <td>{msg.error ?? "-"}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+          <h2>Message Log</h2>
+          <Pager
+            page={currentMsgPage}
+            total={messageLogTotal}
+            pageSize={MSG_PAGE_SIZE}
+            makeHref={(page) => buildHref({ ...baseParams, msgPage: page })}
+          />
+          <table>
+            <thead>
+              <tr>
+                <th align="left">Sent At</th>
+                <th align="left">Channel</th>
+                <th align="left">Status</th>
+                <th align="left">Contact</th>
+                <th align="left">Variant</th>
+                <th align="left">Provider ID</th>
+                <th align="left">Error</th>
+              </tr>
+            </thead>
+            <tbody>
+              {messageLog.map((msg) => (
+                <tr key={msg.id}>
+                  <td>{formatCell(msg.sent_at)}</td>
+                  <td>{msg.channel}</td>
+                  <td>{msg.status}</td>
+                  <td>{msg.email ?? msg.phone ?? "-"}</td>
+                  <td>{msg.variant_id}</td>
+                  <td>{msg.provider_message_id ?? "-"}</td>
+                  <td>{msg.error ?? "-"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      ) : null}
     </main>
   );
 }
