@@ -20,6 +20,7 @@ import {
 } from "@/lib/db/message-log";
 import { getRestockMinQtyFromZero } from "@/lib/jobs/transition";
 import { processRestockQueue } from "@/lib/jobs/process-restock";
+import { getVariantAdminMetaMap } from "@/lib/shopify/admin";
 
 type SubscriptionStatusFilter = "all" | "active" | "notified" | "unsubscribed";
 type EventStatusFilter = "all" | "received" | "queued" | "processed" | "ignored";
@@ -203,6 +204,7 @@ export default async function AdminRestockPage(props: {
   let eventsTotal = 0;
   let messageLog = [] as Awaited<ReturnType<typeof listMessageLog>>;
   let messageLogTotal = 0;
+  let variantMetaById: Record<string, { sku: string | null; variantTitle: string | null }> = {};
   let dashboardError: string | null = null;
 
   try {
@@ -236,6 +238,12 @@ export default async function AdminRestockPage(props: {
       }),
       countMessageLog({ query: q, status: msgStatus, channel })
     ]);
+
+    try {
+      variantMetaById = await getVariantAdminMetaMap(subscriptions.map((s) => s.variant_id));
+    } catch {
+      variantMetaById = {};
+    }
   } catch (error) {
     dashboardError = error instanceof Error ? error.message : "Unknown dashboard data error";
   }
@@ -650,6 +658,7 @@ export default async function AdminRestockPage(props: {
           <tr>
             <th align="left">Email</th>
             <th align="left">Phone</th>
+            <th align="left">SKU / Variant</th>
             <th align="left">Variant</th>
             <th align="left">Status</th>
             <th align="left">Marketing</th>
@@ -658,22 +667,27 @@ export default async function AdminRestockPage(props: {
           </tr>
         </thead>
         <tbody>
-          {subscriptions.map((subscription) => (
-            <tr key={subscription.id}>
-              <td>{subscription.email ?? "-"}</td>
-              <td>{subscription.phone ?? "-"}</td>
-              <td>{subscription.variant_id}</td>
-              <td>{subscription.status}</td>
-              <td>{subscription.marketing_opt_in ? "opted-in" : "-"}</td>
-              <td>{formatCell(subscription.notified_at)}</td>
-              <td>
-                <form action={requeueAction}>
-                  <input type="hidden" name="subscriptionId" value={subscription.id} />
-                  <button type="submit">Requeue</button>
-                </form>
-              </td>
-            </tr>
-          ))}
+          {subscriptions.map((subscription) => {
+            const variantMeta = variantMetaById[subscription.variant_id];
+            const skuVariant = [variantMeta?.sku, variantMeta?.variantTitle].filter(Boolean).join(" - ");
+            return (
+              <tr key={subscription.id}>
+                <td>{subscription.email ?? "-"}</td>
+                <td>{subscription.phone ?? "-"}</td>
+                <td>{skuVariant || "-"}</td>
+                <td>{subscription.variant_id}</td>
+                <td>{subscription.status}</td>
+                <td>{subscription.marketing_opt_in ? "opted-in" : "-"}</td>
+                <td>{formatCell(subscription.notified_at)}</td>
+                <td>
+                  <form action={requeueAction}>
+                    <input type="hidden" name="subscriptionId" value={subscription.id} />
+                    <button type="submit">Requeue</button>
+                  </form>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
 

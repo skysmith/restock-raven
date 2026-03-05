@@ -217,6 +217,12 @@ export interface VariantRestockEmailContext {
   imageUrl: string | null;
 }
 
+export interface VariantAdminMeta {
+  variantId: string;
+  sku: string | null;
+  variantTitle: string | null;
+}
+
 export async function getVariantRestockEmailContext(
   variantId: string
 ): Promise<VariantRestockEmailContext | null> {
@@ -276,4 +282,49 @@ export async function getVariantRestockEmailContext(
   } catch {
     return null;
   }
+}
+
+export async function getVariantAdminMetaMap(
+  variantIds: string[]
+): Promise<Record<string, VariantAdminMeta>> {
+  const uniqueIds = Array.from(new Set(variantIds.map((id) => String(id).trim()).filter(Boolean)));
+  if (!uniqueIds.length) return {};
+
+  const ids = uniqueIds.map((id) => `gid://shopify/ProductVariant/${id}`);
+  const query = `
+    query VariantAdminMeta($ids: [ID!]!) {
+      nodes(ids: $ids) {
+        ... on ProductVariant {
+          id
+          legacyResourceId
+          sku
+          title
+        }
+      }
+    }
+  `;
+
+  const data = await shopifyGraphql<{
+    nodes: Array<
+      | {
+          legacyResourceId: string;
+          sku: string | null;
+          title: string;
+        }
+      | null
+    >;
+  }>(query, { ids });
+
+  const result: Record<string, VariantAdminMeta> = {};
+  for (const node of data.nodes) {
+    if (!node?.legacyResourceId) continue;
+    const variantId = String(node.legacyResourceId);
+    result[variantId] = {
+      variantId,
+      sku: node.sku || null,
+      variantTitle: node.title && node.title.toLowerCase() !== "default title" ? node.title : null
+    };
+  }
+
+  return result;
 }
