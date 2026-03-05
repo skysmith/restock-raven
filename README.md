@@ -76,6 +76,8 @@ npm run healthcheck
 - Shopify auth supports either:
   - `SHOPIFY_ADMIN_TOKEN` (legacy static token), or
   - `SHOPIFY_CLIENT_ID` + `SHOPIFY_CLIENT_SECRET` (Dev Dashboard client credentials exchange).
+- Optional env for better customer email links:
+  - `SHOPIFY_STOREFRONT_BASE_URL` (ex: `https://clementinekids.com`) to force product links to your custom domain.
 - Restock trigger mode:
   - `RESTOCK_TRIGGER_MODE=threshold` (default): queue only when variant inventory goes from `<=0` to `>= RESTOCK_MIN_QTY_FROM_ZERO` (default `11`).
   - `RESTOCK_TRIGGER_MODE=manual`: Shopify inventory webhooks do not auto-queue sends; trigger manually via admin UI or `POST /api/admin/restock/trigger`.

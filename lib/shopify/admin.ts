@@ -209,3 +209,71 @@ export async function isVariantSellableOnline(variantId: string): Promise<boolea
     return true;
   }
 }
+
+export interface VariantRestockEmailContext {
+  productTitle: string;
+  variantTitle: string | null;
+  productUrl: string | null;
+  imageUrl: string | null;
+}
+
+export async function getVariantRestockEmailContext(
+  variantId: string
+): Promise<VariantRestockEmailContext | null> {
+  const gid = `gid://shopify/ProductVariant/${variantId}`;
+  const query = `
+    query VariantEmailContext($id: ID!) {
+      productVariant(id: $id) {
+        id
+        title
+        image {
+          url
+        }
+        product {
+          title
+          handle
+          onlineStoreUrl
+          featuredImage {
+            url
+          }
+        }
+      }
+    }
+  `;
+
+  try {
+    const data = await shopifyGraphql<{
+      productVariant: {
+        title: string;
+        image: { url: string } | null;
+        product: {
+          title: string;
+          handle: string;
+          onlineStoreUrl: string | null;
+          featuredImage: { url: string } | null;
+        } | null;
+      } | null;
+    }>(query, { id: gid });
+
+    const variant = data.productVariant;
+    if (!variant?.product) return null;
+
+    const storefrontBase = process.env.SHOPIFY_STOREFRONT_BASE_URL?.trim().replace(/\/$/, "");
+    const productPath = `/products/${variant.product.handle}?variant=${encodeURIComponent(variantId)}`;
+    const productUrl = storefrontBase
+      ? `${storefrontBase}${productPath}`
+      : variant.product.onlineStoreUrl
+        ? `${variant.product.onlineStoreUrl}?variant=${encodeURIComponent(variantId)}`
+        : null;
+
+    return {
+      productTitle: variant.product.title,
+      variantTitle:
+        variant.title && variant.title.toLowerCase() !== "default title" ? variant.title : null,
+      productUrl,
+      imageUrl: variant.image?.url ?? variant.product.featuredImage?.url ?? null
+    };
+  } catch {
+    return null;
+  }
+}

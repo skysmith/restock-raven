@@ -6,7 +6,7 @@ import {
 } from "@/lib/db/subscriptions";
 import { sendRestockEmail } from "@/lib/providers/email";
 import { sendRestockSms } from "@/lib/providers/sms";
-import { isVariantSellableOnline } from "@/lib/shopify/admin";
+import { getVariantRestockEmailContext, isVariantSellableOnline } from "@/lib/shopify/admin";
 import { isTwilioConfigured } from "@/lib/utils/env";
 
 export interface ProcessResult {
@@ -29,6 +29,7 @@ export async function processRestockQueue(limit = 100): Promise<ProcessResult> {
       await markEventIgnored(event.id);
       continue;
     }
+    const emailContext = await getVariantRestockEmailContext(event.variant_id);
 
     const subscriptions = await getActiveSubscriptionsByVariant(event.variant_id);
 
@@ -42,7 +43,11 @@ export async function processRestockQueue(limit = 100): Promise<ProcessResult> {
             to: subscription.email,
             productId: subscription.product_id,
             variantId: subscription.variant_id,
-            unsubscribeToken: subscription.unsubscribe_token
+            unsubscribeToken: subscription.unsubscribe_token,
+            productTitle: emailContext?.productTitle,
+            variantTitle: emailContext?.variantTitle,
+            productUrl: emailContext?.productUrl,
+            imageUrl: emailContext?.imageUrl
           });
 
           await logMessage({
