@@ -54,8 +54,7 @@
       gap: 6px;
     }
 
-    #restock-raven .rr-field-label,
-    #restock-raven summary {
+    #restock-raven .rr-field-label {
       font-size: 12px;
       letter-spacing: 0.02em;
       text-transform: uppercase;
@@ -63,8 +62,7 @@
       font-weight: 700;
     }
 
-    #restock-raven input[type="email"],
-    #restock-raven input[type="tel"] {
+    #restock-raven input[type="email"] {
       width: 100%;
       min-height: 42px;
       border: 1px solid var(--rr-border);
@@ -84,33 +82,6 @@
       line-height: 1.35;
       color: #3d3d3d;
       font-family: var(--rr-font-body);
-    }
-
-    #restock-raven details {
-      border: 1px solid var(--rr-border);
-      border-radius: 12px;
-      padding: 10px 12px;
-      background: #fff;
-    }
-
-    #restock-raven details[open] {
-      background: #fffaf2;
-    }
-
-    #restock-raven summary {
-      cursor: pointer;
-      list-style: none;
-    }
-
-    #restock-raven summary::-webkit-details-marker {
-      display: none;
-    }
-
-    #restock-raven .rr-optional-copy {
-      margin: 8px 0 10px;
-      color: var(--rr-muted);
-      font-size: 12px;
-      line-height: 1.4;
     }
 
     #restock-raven input[type="checkbox"] {
@@ -175,18 +146,6 @@
         <label class="rr-field-label" for="restock-raven-email">Email</label>
         <input id="restock-raven-email" type="email" name="email" placeholder="you@example.com" autocomplete="email" />
       </div>
-      <details>
-        <summary>Add optional text alerts</summary>
-        <p class="rr-optional-copy">If you'd like a text too, enter your mobile number. US numbers are formatted automatically.</p>
-        <div class="rr-field">
-          <label class="rr-field-label" for="restock-raven-phone">Phone</label>
-          <input id="restock-raven-phone" type="tel" name="phone" placeholder="(555) 555-0123" autocomplete="tel" />
-        </div>
-        <label>
-          <input type="checkbox" name="smsConsent" value="true" />
-          Text me when this item is back in stock.
-        </label>
-      </details>
       <label>
         <input type="checkbox" name="marketingOptIn" value="true" />
         Email me about new arrivals and future restocks too.
@@ -236,8 +195,6 @@
         var fd = new FormData(form);
         var payload = {
           email: fd.get('email') || null,
-          phone: fd.get('phone') || null,
-          smsConsent: fd.get('smsConsent') === 'true',
           marketingOptIn: fd.get('marketingOptIn') === 'true',
           productId: root.dataset.productId,
           variantId: root.dataset.variantId
