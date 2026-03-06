@@ -43,7 +43,7 @@ export async function sendRestockEmail(params: {
           ${variantLine}
           ${imageBlock}
           ${ctaBlock}
-          <p style="margin:16px 0 0;color:#6b7280;font-size:13px;">You signed up for a restock notification for ${productTitle}</p>
+          <p style="margin:16px 0 0;color:#6b7280;font-size:13px;">You signed up for a restock notification for the ${productTitle}</p>
           <p style="margin:10px 0 0;font-size:13px;"><a href="${unsubscribeUrl}" style="color:#334155;">Stop restock alerts</a></p>
         </div>
       </div>
@@ -53,7 +53,7 @@ export async function sendRestockEmail(params: {
       `${productTitle} is back in stock and ready to snuggle`,
       params.variantTitle ? `Variant: ${params.variantTitle}` : null,
       params.productUrl ? `SHOP: ${params.productUrl}` : null,
-      `You signed up for a restock notification for ${productTitle}`,
+      `You signed up for a restock notification for the ${productTitle}`,
       `Stop restock alerts: ${unsubscribeUrl}`
     ]
       .filter(Boolean)
