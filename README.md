@@ -73,6 +73,7 @@ npm run healthcheck
 - No checkout/cart modifications.
 - Location handling is single configured location only in v1.
 - Twilio is optional. In email-only mode (no Twilio env vars), phone subscriptions are rejected and SMS sends are skipped.
+- Browser-side subscribe requests are only allowed from the configured storefront origins derived from `SHOPIFY_STORE_DOMAIN` and `SHOPIFY_STOREFRONT_BASE_URL`.
 - Shopify auth supports either:
   - `SHOPIFY_ADMIN_TOKEN` (legacy static token), or
   - `SHOPIFY_CLIENT_ID` + `SHOPIFY_CLIENT_SECRET` (Dev Dashboard client credentials exchange).

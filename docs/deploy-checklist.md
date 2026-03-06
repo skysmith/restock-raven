@@ -14,6 +14,8 @@
 - [ ] Neon linked from Vercel Marketplace.
 - [ ] `DATABASE_URL` present in target environment.
 - [ ] All required env vars set for Preview and Production.
+- [ ] `SHOPIFY_STORE_DOMAIN` is the Shopify admin domain (`*.myshopify.com`).
+- [ ] `SHOPIFY_STOREFRONT_BASE_URL` is set to the live storefront domain if using a custom domain (for example `https://clementinekids.com`).
 
 ## Database
 - [ ] Run migrations in Neon SQL editor (in order).
@@ -29,12 +31,13 @@
   - [ ] `inventory_levels/update` -> `/api/webhooks/inventory`
 - [ ] Twilio inbound webhook configured:
   - [ ] `/api/webhooks/twilio`
+  - [ ] Twilio auth token in Vercel matches the account sending inbound messages, so signature validation passes.
 - [ ] Resend sender/domain verified.
 
 ## Post-Deploy Verification
 - [ ] `GET /api/health/db` returns `ok: true`.
 - [ ] `GET /admin/restock` prompts for auth and loads.
-- [ ] Test subscribe call succeeds.
+- [ ] Test subscribe call succeeds from `https://<storefront-domain>` and fails from an unapproved origin.
 - [ ] Simulated inventory `0 -> >0` queues event.
 - [ ] Job processor sends exactly one email and/or SMS.
 - [ ] STOP reply unsubscribes SMS recipient.

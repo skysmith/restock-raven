@@ -4,6 +4,8 @@
 1. Create Vercel project from this repo.
 2. Add Neon from Vercel Marketplace and link it to the project.
 3. Add env vars from `.env.example`.
+   - Set `SHOPIFY_STORE_DOMAIN` to the Shopify admin/store domain (`*.myshopify.com`).
+   - Set `SHOPIFY_STOREFRONT_BASE_URL` to the public storefront domain if you use one.
 4. Run SQL migrations in Neon SQL editor (in order):
 - `db/migrations/0001_init.sql`
 - `db/migrations/0002_marketing_opt_in.sql`
@@ -12,6 +14,7 @@
 Twilio is optional:
 - If Twilio env vars are not set, the app runs email-only.
 - Phone submissions are rejected with an SMS unavailable message.
+- If Twilio is enabled, inbound STOP handling now requires a valid Twilio signature.
 
 ## Test (Non-destructive)
 1. Backend only first (no theme live edits).
@@ -23,6 +26,7 @@ Twilio is optional:
 - `message_log` has one row per channel
 - `restock_subscriptions.notified_at` is set once
 - `npm run healthcheck` passes
+- browser subscribe requests work from the storefront domain and are blocked from unrelated origins
 
 ## Trigger Strategy
 - Default (recommended): `RESTOCK_TRIGGER_MODE=threshold` and `RESTOCK_MIN_QTY_FROM_ZERO=11`

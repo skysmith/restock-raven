@@ -39,3 +39,33 @@ export function isTwilioConfigured(): boolean {
     process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_FROM_NUMBER
   );
 }
+
+function normalizeOrigin(value: string): string | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  try {
+    const url = new URL(trimmed.includes("://") ? trimmed : `https://${trimmed}`);
+    return url.origin.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+export function getAllowedSubscribeOrigins(): string[] {
+  const origins = new Set<string>();
+
+  const storeDomain = process.env.SHOPIFY_STORE_DOMAIN;
+  if (storeDomain) {
+    const normalized = normalizeOrigin(storeDomain);
+    if (normalized) origins.add(normalized);
+  }
+
+  const storefrontBase = process.env.SHOPIFY_STOREFRONT_BASE_URL;
+  if (storefrontBase) {
+    const normalized = normalizeOrigin(storefrontBase);
+    if (normalized) origins.add(normalized);
+  }
+
+  return [...origins];
+}

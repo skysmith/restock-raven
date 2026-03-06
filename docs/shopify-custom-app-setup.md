@@ -17,6 +17,10 @@ Set:
 - `SHOPIFY_WEBHOOK_SECRET`
 - `SHOPIFY_LOCATION_ID`
 
+Notes:
+- `SHOPIFY_STORE_DOMAIN` should be the Shopify admin/store domain, typically `your-store.myshopify.com`.
+- If the storefront runs on a custom domain, also set `SHOPIFY_STOREFRONT_BASE_URL` so browser subscribe requests and email links use the live storefront domain.
+
 ## 3. Register webhook
 Use Shopify Admin GraphQL to create `inventory_levels/update` webhook pointing to:
 - `https://<your-vercel-domain>/api/webhooks/inventory`
@@ -44,3 +48,6 @@ Variables:
 ## 4. Optional: inbound STOP webhook for Twilio
 Set Twilio messaging webhook URL to:
 - `https://<your-vercel-domain>/api/webhooks/twilio`
+
+Important:
+- The deployed `TWILIO_AUTH_TOKEN` must match the Twilio account attached to that webhook, or inbound STOP validation will be rejected.

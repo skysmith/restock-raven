@@ -3,13 +3,17 @@ import { subscribeSchema } from "@/lib/validation";
 import { normalizePhone } from "@/lib/utils/phone";
 import { hashIp } from "@/lib/utils/crypto";
 import { upsertSubscription } from "@/lib/db/subscriptions";
-import { getEnv, isTwilioConfigured } from "@/lib/utils/env";
+import { getAllowedSubscribeOrigins, isTwilioConfigured } from "@/lib/utils/env";
+
+function getAllowedOrigin(origin?: string | null): string | null {
+  if (!origin) return null;
+  return getAllowedSubscribeOrigins().includes(origin.toLowerCase()) ? origin : null;
+}
 
 function corsHeaders(origin?: string | null): Record<string, string> {
-  const fallbackOrigin = `https://${getEnv("SHOPIFY_STORE_DOMAIN")}`;
-  const allowOrigin = origin && /^https?:\/\//i.test(origin) ? origin : fallbackOrigin;
+  const allowOrigin = getAllowedOrigin(origin);
   return {
-    "Access-Control-Allow-Origin": allowOrigin,
+    ...(allowOrigin ? { "Access-Control-Allow-Origin": allowOrigin } : {}),
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
     Vary: "Origin"
@@ -17,14 +21,23 @@ function corsHeaders(origin?: string | null): Record<string, string> {
 }
 
 export async function OPTIONS(request: NextRequest): Promise<NextResponse> {
+  const origin = request.headers.get("origin");
+  if (origin && !getAllowedOrigin(origin)) {
+    return NextResponse.json({ ok: false, error: "Origin not allowed" }, { status: 403 });
+  }
+
   return new NextResponse(null, {
     status: 204,
-    headers: corsHeaders(request.headers.get("origin"))
+    headers: corsHeaders(origin)
   });
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const origin = request.headers.get("origin");
+  if (origin && !getAllowedOrigin(origin)) {
+    return NextResponse.json({ ok: false, error: "Origin not allowed" }, { status: 403 });
+  }
+
   try {
     const body = await request.json();
     const parsed = subscribeSchema.parse(body);

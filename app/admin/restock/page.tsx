@@ -269,30 +269,31 @@ export default async function AdminRestockPage(props: {
       <style>{`
         .rr-admin {
           --rr-max: 1120px;
-          --rr-radius: 16px;
+          --rr-radius: 18px;
           --rr-radius-sm: 12px;
-          --rr-gap: 14px;
+          --rr-gap: 16px;
           --rr-font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
           --rr-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono";
-          --rr-bg: #f7f8fb;
-          --rr-surface: rgba(255, 255, 255, 0.85);
+          --rr-bg: #f3f4f6;
+          --rr-surface: rgba(255, 255, 255, 0.96);
           --rr-surface-solid: #ffffff;
-          --rr-border: rgba(16, 24, 40, 0.1);
+          --rr-border: rgba(16, 24, 40, 0.09);
           --rr-text: #0b1220;
           --rr-muted: rgba(11, 18, 32, 0.65);
           --rr-faint: rgba(11, 18, 32, 0.45);
-          --rr-primary: #2f6bff;
-          --rr-primary-2: #6aa6ff;
-          --rr-danger: #ff4d6d;
+          --rr-primary: #165df5;
+          --rr-primary-2: #3d7bff;
+          --rr-danger: #d64545;
+          --rr-warn-bg: #fff8e7;
+          --rr-warn-border: rgba(214, 159, 20, 0.25);
           --rr-shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
-          --rr-shadow: 0 10px 30px rgba(16, 24, 40, 0.1);
-          --rr-shadow-lg: 0 25px 60px rgba(16, 24, 40, 0.16);
+          --rr-shadow: 0 10px 28px rgba(16, 24, 40, 0.08);
+          --rr-shadow-lg: 0 18px 36px rgba(16, 24, 40, 0.1);
           font-family: var(--rr-font);
           color: var(--rr-text);
           background:
-            radial-gradient(1200px 500px at 10% -10%, rgba(47, 107, 255, 0.18), transparent 60%),
-            radial-gradient(900px 450px at 95% 10%, rgba(245, 158, 11, 0.14), transparent 55%),
-            radial-gradient(900px 450px at 60% 110%, rgba(34, 197, 94, 0.1), transparent 55%),
+            linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.86)),
+            radial-gradient(900px 320px at 0% 0%, rgba(22, 93, 245, 0.08), transparent 60%),
             var(--rr-bg);
           min-height: 100vh;
           padding: 28px 18px 60px;
@@ -304,17 +305,33 @@ export default async function AdminRestockPage(props: {
         }
 
         .rr-admin h1 {
-          font-size: 48px;
-          line-height: 1.05;
+          font-size: 42px;
+          line-height: 1.08;
           letter-spacing: -0.03em;
-          margin: 6px 0 18px;
+          margin: 0 0 8px;
         }
 
         .rr-admin h2 {
-          font-size: 30px;
+          font-size: 26px;
           line-height: 1.15;
-          margin: 22px 0 8px;
+          margin: 26px 0 10px;
           letter-spacing: -0.02em;
+        }
+
+        .rr-admin .rr-subtitle {
+          margin: 0;
+          max-width: 720px;
+          color: var(--rr-muted);
+          font-size: 15px;
+          line-height: 1.5;
+        }
+
+        .rr-admin .rr-hero {
+          display: flex;
+          align-items: end;
+          justify-content: space-between;
+          gap: 16px;
+          margin-bottom: 18px;
         }
 
         .rr-admin .rr-title {
@@ -348,7 +365,7 @@ export default async function AdminRestockPage(props: {
         }
 
         .rr-admin .rr-grid--actions {
-          grid-template-columns: 1.2fr 1fr 0.9fr 0.9fr;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
         }
 
         .rr-admin .rr-kpi > div {
@@ -365,6 +382,13 @@ export default async function AdminRestockPage(props: {
           display: grid;
           grid-template-columns: 1.6fr repeat(4, minmax(0, 1fr)) auto auto;
           gap: 10px;
+          align-items: center;
+        }
+
+        .rr-admin .rr-link-row {
+          display: flex;
+          gap: 14px;
+          flex-wrap: wrap;
           align-items: center;
         }
 
@@ -507,14 +531,12 @@ export default async function AdminRestockPage(props: {
 
         .rr-admin a:hover { text-decoration: underline; }
 
-        .rr-admin .rr-guide {
+        .rr-admin .rr-note {
           margin: 0;
-          padding-left: 18px;
           color: var(--rr-muted);
+          font-size: 14px;
+          line-height: 1.45;
         }
-
-        .rr-admin .rr-guide b,
-        .rr-admin .rr-guide strong { color: var(--rr-text); }
 
         .rr-admin form.inline {
           display: inline;
@@ -530,32 +552,58 @@ export default async function AdminRestockPage(props: {
           max-width: 220px;
         }
 
+        .rr-admin .rr-action-card {
+          display: grid;
+          gap: 10px;
+        }
+
+        .rr-admin .rr-action-card h3 {
+          margin: 0;
+          font-size: 16px;
+        }
+
+        .rr-admin .rr-action-card--warn {
+          background: var(--rr-warn-bg);
+          border-color: var(--rr-warn-border);
+        }
+
+        .rr-admin .rr-table-wrap {
+          overflow-x: auto;
+        }
+
+        .rr-admin .rr-empty {
+          padding: 16px;
+          border: 1px dashed var(--rr-border);
+          border-radius: var(--rr-radius-sm);
+          color: var(--rr-muted);
+          background: rgba(255, 255, 255, 0.7);
+        }
+
         @media (max-width: 980px) {
           .rr-admin .rr-grid--stats,
           .rr-admin .rr-grid--actions,
-          .rr-admin .rr-controls {
+          .rr-admin .rr-controls,
+          .rr-admin .rr-hero {
             grid-template-columns: 1fr;
+            display: grid;
           }
-          .rr-admin h1 { font-size: 40px; }
+          .rr-admin h1 { font-size: 36px; }
         }
       `}</style>
       <div className="rr-container">
-      <h1>Restock Raven Admin</h1>
+      <section className="rr-hero">
+        <div>
+          <h1>Restock Raven Admin</h1>
+          <p className="rr-subtitle">
+            Manage subscribers, trigger restock sends, and inspect delivery issues. Diagnostics stay out of the way unless you explicitly open them.
+          </p>
+        </div>
+      </section>
       {dashboardError ? (
         <div className="rr-card rr-card--tight">
           Dashboard data failed to load: {dashboardError}
         </div>
       ) : null}
-
-      <section className="rr-card rr-card--padded" aria-label="Manual restock instructions">
-        <h3 className="rr-title">Manual Restock Quick Guide</h3>
-        <ol className="rr-guide">
-          <li>Find the variant ID from your product URL or the variants table in Shopify admin.</li>
-          <li>Paste the variant ID and click <strong>Trigger + Process Now</strong> for one-step send testing.</li>
-          <li>Check <strong>Recent Events</strong> for `processed` and <strong>Message Log</strong> for `sent` or `failed`.</li>
-          <li>Use <strong>Requeue</strong> on a subscription row if you need to resend for that subscriber.</li>
-        </ol>
-      </section>
 
       <section className="rr-grid rr-grid--stats">
         <div className="rr-kpi rr-card rr-card--tight">
@@ -585,7 +633,7 @@ export default async function AdminRestockPage(props: {
           type="text"
           name="q"
           defaultValue={q ?? ""}
-          placeholder="Search email, phone, variant"
+          placeholder="Search contact or variant ID"
         />
         <select name="status" defaultValue={status}>
           <option value="all">All subscriptions</option>
@@ -611,16 +659,23 @@ export default async function AdminRestockPage(props: {
           <option value="sms">SMS</option>
         </select>
         <button className="rr-btn rr-btn--primary" type="submit">Apply Filters</button>
-        <Link href={csvHref}>Export CSV</Link>
-        {showDebug ? (
-          <Link href={buildHref({ ...baseParams, debug: false, eventPage: 1, msgPage: 1 })}>Hide debug tables</Link>
-        ) : (
-          <Link href={buildHref({ ...baseParams, debug: true })}>Show debug tables</Link>
-        )}
+        <div className="rr-link-row">
+          <Link href={csvHref}>Export CSV</Link>
+          {showDebug ? (
+            <Link href={buildHref({ ...baseParams, debug: false, eventPage: 1, msgPage: 1 })}>Hide diagnostics</Link>
+          ) : (
+            <Link href={buildHref({ ...baseParams, debug: true })}>Show diagnostics</Link>
+          )}
+        </div>
       </form>
 
+      <h2>Run Actions</h2>
+      <p className="rr-note">
+        Use <strong>Trigger + Process Now</strong> for the normal manual test flow. The other actions are for queue control and webhook maintenance.
+      </p>
       <div className="rr-grid rr-grid--actions">
         <div className="rr-action-card rr-card rr-card--tight">
+          <h3>Queue only</h3>
           <form className="rr-action-form" action={triggerVariantAction}>
             <input
               type="text"
@@ -631,10 +686,11 @@ export default async function AdminRestockPage(props: {
               Queue Manual Restock Event
             </button>
           </form>
-          <p className="rr-help">Queue only. Use this if you want to line up multiple variants first.</p>
+          <p className="rr-help">Use this when you want to line up one or more variants before processing.</p>
         </div>
 
         <div className="rr-action-card rr-card rr-card--tight">
+          <h3>Trigger and send</h3>
           <form className="rr-action-form" action={triggerAndProcessAction}>
             <input
               type="text"
@@ -645,25 +701,27 @@ export default async function AdminRestockPage(props: {
               Trigger + Process Now
             </button>
           </form>
-          <p className="rr-help">Fastest test button. One click to queue and send.</p>
+          <p className="rr-help">Fastest path for a one-off test. Queue the event and immediately attempt delivery.</p>
         </div>
 
         <div className="rr-action-card rr-card rr-card--tight">
+          <h3>Process queued events</h3>
           <form className="inline" action={processNowAction}>
             <button className="rr-btn" type="submit" title="Processes all currently queued events and sends notifications.">
               Process Queue Now
             </button>
           </form>
-          <p className="rr-help">Use after queueing events if they have not been processed yet.</p>
+          <p className="rr-help">Run this after queueing events if they have not been processed yet.</p>
         </div>
 
-        <div className="rr-action-card rr-card rr-card--tight">
+        <div className="rr-action-card rr-action-card--warn rr-card rr-card--tight">
+          <h3>Webhook maintenance</h3>
           <form className="inline" action={ensureWebhookAction}>
             <button className="rr-btn rr-btn--danger" type="submit" title="Creates or verifies inventory webhook registration in Shopify.">
               Ensure Shopify Inventory Webhook
             </button>
           </form>
-          <p className="rr-help">Run this after app/env changes to keep webhook delivery active.</p>
+          <p className="rr-help">Run this after app or environment changes to keep Shopify inventory delivery active.</p>
         </div>
       </div>
 
@@ -674,6 +732,7 @@ export default async function AdminRestockPage(props: {
         pageSize={SUB_PAGE_SIZE}
         makeHref={(page) => buildHref({ ...baseParams, subPage: page })}
       />
+      <div className="rr-table-wrap">
       <table>
         <thead>
           <tr>
@@ -688,7 +747,7 @@ export default async function AdminRestockPage(props: {
           </tr>
         </thead>
         <tbody>
-          {subscriptions.map((subscription) => {
+          {subscriptions.length ? subscriptions.map((subscription) => {
             const variantMeta = variantMetaById[subscription.variant_id];
             const skuVariant = [variantMeta?.sku, variantMeta?.variantTitle].filter(Boolean).join(" - ");
             return (
@@ -708,12 +767,21 @@ export default async function AdminRestockPage(props: {
                 </td>
               </tr>
             );
-          })}
+          }) : (
+            <tr>
+              <td colSpan={8}>
+                <div className="rr-empty">No subscriptions matched the current filters.</div>
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
+      </div>
 
       {showDebug ? (
         <>
+          <h2>Diagnostics</h2>
+          <p className="rr-note">Use these tables for webhook tracing and delivery debugging.</p>
           <h2>Recent Events</h2>
           <Pager
             page={currentEventPage}
@@ -721,6 +789,7 @@ export default async function AdminRestockPage(props: {
             pageSize={EVENT_PAGE_SIZE}
             makeHref={(page) => buildHref({ ...baseParams, eventPage: page })}
           />
+          <div className="rr-table-wrap">
           <table>
             <thead>
               <tr>
@@ -733,7 +802,7 @@ export default async function AdminRestockPage(props: {
               </tr>
             </thead>
             <tbody>
-              {events.map((event) => (
+              {events.length ? events.map((event) => (
                 <tr key={event.id}>
                   <td>{formatCell(event.occurred_at)}</td>
                   <td>{event.variant_id}</td>
@@ -742,9 +811,16 @@ export default async function AdminRestockPage(props: {
                   <td>{event.status}</td>
                   <td>{formatCell(event.processed_at)}</td>
                 </tr>
-              ))}
+              )) : (
+                <tr>
+                  <td colSpan={6}>
+                    <div className="rr-empty">No events matched the current filters.</div>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
+          </div>
 
           <h2>Message Log</h2>
           <Pager
@@ -753,6 +829,7 @@ export default async function AdminRestockPage(props: {
             pageSize={MSG_PAGE_SIZE}
             makeHref={(page) => buildHref({ ...baseParams, msgPage: page })}
           />
+          <div className="rr-table-wrap">
           <table>
             <thead>
               <tr>
@@ -766,7 +843,7 @@ export default async function AdminRestockPage(props: {
               </tr>
             </thead>
             <tbody>
-              {messageLog.map((msg) => (
+              {messageLog.length ? messageLog.map((msg) => (
                 <tr key={msg.id}>
                   <td>{formatCell(msg.sent_at)}</td>
                   <td>{msg.channel}</td>
@@ -776,9 +853,16 @@ export default async function AdminRestockPage(props: {
                   <td>{msg.provider_message_id ?? "-"}</td>
                   <td>{msg.error ?? "-"}</td>
                 </tr>
-              ))}
+              )) : (
+                <tr>
+                  <td colSpan={7}>
+                    <div className="rr-empty">No message log rows matched the current filters.</div>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
+          </div>
         </>
       ) : null}
       </div>
