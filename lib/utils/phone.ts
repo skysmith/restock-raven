@@ -1,11 +1,22 @@
 export function normalizePhone(input: string): string {
   const raw = input.trim();
-  const digits = raw.replace(/[^\d+]/g, "");
-  if (!digits.startsWith("+")) {
-    throw new Error("Phone number must include country code (E.164), e.g. +15551234567");
+  if (!raw) {
+    throw new Error("Phone number is required");
   }
-  if (!/^\+[1-9]\d{7,14}$/.test(digits)) {
+
+  if (raw.startsWith("+")) {
+    const digits = `+${raw.slice(1).replace(/\D/g, "")}`;
+    if (!/^\+[1-9]\d{7,14}$/.test(digits)) {
+      throw new Error("Invalid phone number format");
+    }
+    return digits;
+  }
+
+  const digits = raw.replace(/\D/g, "");
+  const usNumber = digits.length === 11 && digits.startsWith("1") ? digits.slice(1) : digits;
+  if (!/^\d{10}$/.test(usNumber)) {
     throw new Error("Invalid phone number format");
   }
-  return digits;
+
+  return `+1${usNumber}`;
 }
