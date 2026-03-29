@@ -2,6 +2,21 @@
 
 Private single-store Shopify restock alerts (variant-specific) using Vercel, Neon (via Vercel Marketplace), and Resend, with optional Twilio SMS.
 
+## Workspace Metadata
+
+- Name: Restock Raven
+- Domain: business
+- Status: active
+- Purpose: Private Shopify restock alerts and operations tooling
+- Path: business/restock-raven
+- Related:
+  - business/clementine-kids
+  - business/data
+- Tags:
+  - shopify
+  - inventory
+  - alerts
+
 ## What v1 includes
 - Variant-level subscriptions (`variant_id`)
 - Shopify inventory webhook ingest (`inventory_levels/update`) with HMAC verification
@@ -77,6 +92,7 @@ npm run healthcheck
 - Shopify auth supports either:
   - `SHOPIFY_ADMIN_TOKEN` (legacy static token), or
   - `SHOPIFY_CLIENT_ID` + `SHOPIFY_CLIENT_SECRET` (Dev Dashboard client credentials exchange).
+- Shopify custom app scopes should include `read_inventory`, `read_orders`, `read_products`, `read_locations`, and `write_webhooks`.
 - Optional env for better customer email links:
   - `SHOPIFY_STOREFRONT_BASE_URL` (ex: `https://clementinekids.com`) to force product links to your custom domain.
 - Restock trigger mode:

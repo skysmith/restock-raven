@@ -5,10 +5,15 @@
 2. Create app `Restock Raven`.
 3. Grant Admin API scopes:
 - `read_inventory`
+- `read_orders`
 - `read_products`
 - `read_locations`
 - `write_webhooks`
 4. Install app and copy Admin API token.
+
+Notes:
+- `read_orders` is required if you want downstream tools like the Clementine Kids dashboard sync to import recent orders and open-order counts.
+- If you add a new scope to an existing custom app, save the scope change and reinstall or update the app access in Shopify before expecting the new permission to work.
 
 ## 2. Configure env vars in Vercel
 Set:
