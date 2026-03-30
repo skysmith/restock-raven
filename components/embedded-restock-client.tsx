@@ -461,9 +461,13 @@ export function EmbeddedRestockClient() {
 
         {summary ? (
           <>
-            <section style={styles.card}>
-              <strong>Connected shop</strong>
-              <p style={styles.mono}>{summary.shop}</p>
+            <section style={styles.heroPanel}>
+              <div style={styles.heroPanelRow}>
+                <div>
+                  <strong style={styles.sectionTitle}>Connected shop</strong>
+                  <p style={styles.mono}>{summary.shop}</p>
+                </div>
+              </div>
               <p style={styles.paragraph}>
                 This embedded page is now using authenticated Shopify-to-backend requests. Next we can keep expanding
                 the in-app operational workflows and phase out the standalone admin.
@@ -471,33 +475,33 @@ export function EmbeddedRestockClient() {
             </section>
 
             <section style={styles.grid}>
-              <article style={styles.card}>
-                <strong>Subscriptions</strong>
+              <article style={styles.statCard}>
+                <div style={styles.statLabel}>Subscriptions</div>
                 <p style={styles.metric}>{summary.subscriptions.total}</p>
-                <p style={styles.paragraph}>
+                <p style={styles.statDetail}>
                   Active {summary.subscriptions.active} · Notified {summary.subscriptions.notified} · Unsubscribed{" "}
                   {summary.subscriptions.unsubscribed}
                 </p>
               </article>
-              <article style={styles.card}>
-                <strong>Events</strong>
+              <article style={styles.statCard}>
+                <div style={styles.statLabel}>Events</div>
                 <p style={styles.metric}>{summary.events.total}</p>
-                <p style={styles.paragraph}>
+                <p style={styles.statDetail}>
                   Received {summary.events.received} · Queued {summary.events.queued} · Processed{" "}
                   {summary.events.processed}
                 </p>
               </article>
-              <article style={styles.card}>
-                <strong>Messages</strong>
+              <article style={styles.statCard}>
+                <div style={styles.statLabel}>Messages</div>
                 <p style={styles.metric}>{summary.messages.total}</p>
-                <p style={styles.paragraph}>
+                <p style={styles.statDetail}>
                   Sent {summary.messages.sent} · Failed {summary.messages.failed}
                 </p>
               </article>
             </section>
 
             <section style={styles.card}>
-              <strong>Manual Restock Trigger</strong>
+              <strong style={styles.sectionTitle}>Manual Restock Trigger</strong>
               <p style={styles.paragraph}>
                 Queue a restock event for a variant directly inside Shopify. Use the second button when you want to
                 process queued sends immediately.
@@ -522,7 +526,7 @@ export function EmbeddedRestockClient() {
             <section style={styles.card}>
               <div style={styles.sectionHeader}>
                 <div>
-                  <strong>Subscriptions</strong>
+                  <strong style={styles.sectionTitle}>Subscriptions</strong>
                   <p style={styles.paragraph}>Authenticated embedded table preview of recent subscribers.</p>
                 </div>
                 <div style={styles.row}>
@@ -588,7 +592,7 @@ export function EmbeddedRestockClient() {
             </section>
 
             <section style={styles.card}>
-              <strong>Recent Events</strong>
+              <strong style={styles.sectionTitle}>Recent Events</strong>
               <p style={styles.paragraph}>Showing {events.length} of {eventsTotal} recent webhook/manual events.</p>
               {eventsLoading ? <p style={styles.paragraph}>Loading events...</p> : null}
               {!eventsLoading && events.length > 0 ? (
@@ -620,7 +624,7 @@ export function EmbeddedRestockClient() {
             </section>
 
             <section style={styles.card}>
-              <strong>Message Log</strong>
+              <strong style={styles.sectionTitle}>Message Log</strong>
               <p style={styles.paragraph}>Showing {messages.length} of {messagesTotal} recent delivery attempts.</p>
               {messagesLoading ? <p style={styles.paragraph}>Loading message log...</p> : null}
               {!messagesLoading && messages.length > 0 ? (
@@ -662,46 +666,64 @@ export function EmbeddedRestockClient() {
 const styles: Record<string, CSSProperties> = {
   page: {
     minHeight: "100vh",
-    padding: "24px 18px 56px",
-    background:
-      "linear-gradient(180deg, rgba(244,247,252,0.95), rgba(248,250,252,0.98)), radial-gradient(900px 320px at 0% 0%, rgba(0,128,96,0.09), transparent 60%), #eef2f6",
-    fontFamily: 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif',
-    color: "#111827"
+    padding: "24px 20px 56px",
+    background: "#f6f6f7",
+    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    color: "#303030"
   },
   container: {
     maxWidth: 980,
-    margin: "0 auto"
+    margin: "0 auto",
+    display: "grid",
+    gap: 16
   },
   hero: {
-    marginBottom: 18
+    display: "grid",
+    gap: 10
   },
   kicker: {
     margin: 0,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: 700,
     textTransform: "uppercase",
-    letterSpacing: "0.04em",
-    color: "#0f766e"
+    letterSpacing: "0.08em",
+    color: "#61666c"
   },
   h1: {
-    margin: "8px 0 10px",
-    fontSize: 40,
-    lineHeight: 1.05
+    margin: 0,
+    fontSize: 36,
+    lineHeight: 1.05,
+    letterSpacing: "-0.03em"
   },
   subtle: {
     margin: 0,
     maxWidth: 720,
-    color: "#4b5563",
+    color: "#61666c",
     lineHeight: 1.5
+  },
+  heroPanel: {
+    display: "grid",
+    gap: 8,
+    padding: "14px 16px",
+    border: "1px solid #d2d5d8",
+    borderRadius: 12,
+    background: "#ffffff"
+  },
+  heroPanelRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: 12,
+    alignItems: "center",
+    flexWrap: "wrap"
   },
   grid: {
     display: "grid",
     gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-    gap: 16
+    gap: 10
   },
   row: {
     display: "flex",
-    gap: 12,
+    gap: 10,
     alignItems: "center",
     flexWrap: "wrap"
   },
@@ -713,74 +735,106 @@ const styles: Record<string, CSSProperties> = {
     flexWrap: "wrap"
   },
   card: {
-    background: "rgba(255,255,255,0.96)",
-    border: "1px solid rgba(15,23,42,0.08)",
-    borderRadius: 18,
-    padding: 18,
-    boxShadow: "0 10px 28px rgba(16,24,40,0.08)"
+    background: "#ffffff",
+    border: "1px solid #d2d5d8",
+    borderRadius: 12,
+    padding: 16,
+    boxShadow: "none"
+  },
+  statCard: {
+    display: "grid",
+    gap: 2,
+    minHeight: 0,
+    padding: "12px 14px",
+    border: "1px solid #d2d5d8",
+    borderRadius: 8,
+    background: "#ffffff"
   },
   warnCard: {
     background: "#fff8e7",
-    border: "1px solid rgba(214,159,20,0.25)",
-    borderRadius: 18,
-    padding: 18,
-    boxShadow: "0 10px 28px rgba(16,24,40,0.05)"
+    border: "1px solid #e3d0a1",
+    borderRadius: 12,
+    padding: 16,
+    boxShadow: "none"
   },
   paragraph: {
-    margin: "10px 0 0",
-    color: "#4b5563",
+    margin: "8px 0 0",
+    color: "#61666c",
     lineHeight: 1.45
+  },
+  sectionTitle: {
+    fontSize: 14,
+    lineHeight: 1.2
   },
   mono: {
     margin: "8px 0 0",
+    color: "#303030",
     fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace'
   },
+  statLabel: {
+    color: "#61666c",
+    fontSize: 12,
+    fontWeight: 600,
+    lineHeight: 1.1
+  },
   metric: {
-    margin: "10px 0 6px",
-    fontSize: 34,
-    fontWeight: 700
+    margin: "2px 0",
+    fontSize: 26,
+    fontWeight: 700,
+    lineHeight: 1.05,
+    letterSpacing: "-0.02em"
+  },
+  statDetail: {
+    margin: 0,
+    color: "#61666c",
+    fontSize: 12,
+    lineHeight: 1.35
   },
   input: {
-    height: 42,
+    height: 36,
     minWidth: 200,
     padding: "0 12px",
-    borderRadius: 12,
-    border: "1px solid rgba(15,23,42,0.12)",
-    background: "rgba(255,255,255,0.95)"
+    borderRadius: 8,
+    border: "1px solid #c9cccf",
+    background: "#fff",
+    color: "#303030"
   },
   select: {
-    height: 42,
+    height: 36,
     minWidth: 140,
     padding: "0 12px",
-    borderRadius: 12,
-    border: "1px solid rgba(15,23,42,0.12)",
-    background: "rgba(255,255,255,0.95)"
+    borderRadius: 8,
+    border: "1px solid #c9cccf",
+    background: "#fff",
+    color: "#303030"
   },
   button: {
-    height: 42,
+    height: 36,
     padding: "0 14px",
-    borderRadius: 12,
-    border: "1px solid rgba(15,23,42,0.12)",
-    background: "rgba(255,255,255,0.95)",
+    borderRadius: 8,
+    border: "1px solid #8a8f98",
+    background: "#fff",
+    color: "#303030",
     cursor: "pointer",
     fontWeight: 600
   },
   primaryButton: {
-    height: 42,
+    height: 36,
     padding: "0 14px",
-    borderRadius: 12,
-    border: "1px solid rgba(15,23,42,0.12)",
-    background: "linear-gradient(135deg, #0f766e, #14b8a6)",
+    borderRadius: 8,
+    border: "1px solid #005bd3",
+    background: "#005bd3",
     color: "#fff",
     cursor: "pointer",
     fontWeight: 700
   },
   smallButton: {
-    height: 34,
+    height: 30,
     padding: "0 10px",
-    borderRadius: 10,
-    border: "1px solid rgba(15,23,42,0.12)",
-    background: "rgba(255,255,255,0.95)",
+    borderRadius: 8,
+    border: "1px solid #8a8f98",
+    background: "#fff",
+    color: "#303030",
     cursor: "pointer",
     fontWeight: 600
   },
@@ -790,18 +844,19 @@ const styles: Record<string, CSSProperties> = {
   },
   table: {
     width: "100%",
-    borderCollapse: "collapse"
+    borderCollapse: "collapse",
+    background: "#fff"
   },
   th: {
     textAlign: "left",
     fontSize: 12,
-    color: "#6b7280",
+    color: "#61666c",
     padding: "10px 8px",
-    borderBottom: "1px solid rgba(15,23,42,0.1)"
+    borderBottom: "1px solid #e3e5e7"
   },
   td: {
     padding: "12px 8px",
-    borderBottom: "1px solid rgba(15,23,42,0.08)",
+    borderBottom: "1px solid #eceef0",
     fontSize: 14
   }
 };
