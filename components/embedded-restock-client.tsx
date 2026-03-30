@@ -440,10 +440,6 @@ export function EmbeddedRestockClient() {
         <div style={styles.hero}>
           <p style={styles.kicker}>Embedded Preview</p>
           <h1 style={styles.h1}>Restock Raven</h1>
-          <p style={styles.subtle}>
-            Shopify App Bridge is now loaded in the embedded surface, and this page authenticates to backend endpoints
-            using Shopify session tokens.
-          </p>
         </div>
 
         {loading ? <section style={styles.card}>Connecting to Shopify and loading restock summary...</section> : null}
@@ -461,19 +457,6 @@ export function EmbeddedRestockClient() {
 
         {summary ? (
           <>
-            <section style={styles.heroPanel}>
-              <div style={styles.heroPanelRow}>
-                <div>
-                  <strong style={styles.sectionTitle}>Connected shop</strong>
-                  <p style={styles.mono}>{summary.shop}</p>
-                </div>
-              </div>
-              <p style={styles.paragraph}>
-                This embedded page is now using authenticated Shopify-to-backend requests. Next we can keep expanding
-                the in-app operational workflows and phase out the standalone admin.
-              </p>
-            </section>
-
             <section style={styles.grid}>
               <article style={styles.statCard}>
                 <div style={styles.statLabel}>Subscriptions</div>
@@ -694,27 +677,6 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 36,
     lineHeight: 1.05,
     letterSpacing: "-0.03em"
-  },
-  subtle: {
-    margin: 0,
-    maxWidth: 720,
-    color: "#61666c",
-    lineHeight: 1.5
-  },
-  heroPanel: {
-    display: "grid",
-    gap: 8,
-    padding: "14px 16px",
-    border: "1px solid #d2d5d8",
-    borderRadius: 12,
-    background: "#ffffff"
-  },
-  heroPanelRow: {
-    display: "flex",
-    justifyContent: "space-between",
-    gap: 12,
-    alignItems: "center",
-    flexWrap: "wrap"
   },
   grid: {
     display: "grid",
