@@ -11,5 +11,10 @@ export function generateMetadata(): Metadata {
 }
 
 export default function EmbeddedLayout({ children }: { children: ReactNode }) {
-  return children;
+  return (
+    <>
+      <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
+      {children}
+    </>
+  );
 }
