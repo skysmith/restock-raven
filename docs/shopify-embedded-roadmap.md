@@ -56,3 +56,4 @@ Status:
 ## Notes
 - “Put everything in the frontend” is not the right target here.
 - The right split is Shopify-embedded admin UI plus Vercel-hosted backend services.
+- As the embedded surface gains more store context and operational workflows, keep reusable seams visible so the project can later be shared more cleanly if we choose to open-source parts of it.

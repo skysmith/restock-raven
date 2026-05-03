@@ -98,6 +98,7 @@ npm run healthcheck
 - Restock trigger mode:
   - `RESTOCK_TRIGGER_MODE=threshold` (default): queue only when variant inventory goes from `<=0` to `>= RESTOCK_MIN_QTY_FROM_ZERO` (default `11`).
   - `RESTOCK_TRIGGER_MODE=manual`: Shopify inventory webhooks do not auto-queue sends; trigger manually via admin UI or `POST /api/admin/restock/trigger`.
+- Future work should keep shareability in mind as more context accumulates. Prefer boundaries that could later be generalized into a public template, extracted package, or reference implementation without carrying business-specific assumptions everywhere.
 
 ## Operational Docs
 - [Security Policy](./SECURITY.md)

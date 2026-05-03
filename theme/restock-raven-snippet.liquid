@@ -6,172 +6,179 @@
 {% endcomment %}
 
 {% if settings.enable_restock_raven %}
+  {% assign rr_dom_id = 'restock-raven-' | append: product.id %}
   <style>
-    #restock-raven {
-      --rr-bg: #ffffff;
-      --rr-text: #222222;
-      --rr-accent: #f2a95d;
-      --rr-soft: #b9c4cf;
-      --rr-border: #ddd6cf;
-      --rr-muted: #5c6772;
-      --rr-font-body: var(--font-body-family, var(--font-body-family-fallback, inherit));
-      --rr-font-heading: var(--font-heading-family, var(--rr-font-body));
+    #{{ rr_dom_id }} {
+      --rr-text: #333333;
+      --rr-button-bg: #303030;
+      --rr-button-text: #ffffff;
+      --rr-border: #dedede;
+      --rr-muted: #696969;
+      --rr-focus: #f2a95d;
+      --rr-font-body: var(--body-font, inherit);
+      --rr-font-weight: var(--body-font-weight, 400);
+      --rr-font-style: var(--body-font-style, normal);
       display: none;
-      margin-top: 14px;
-      padding: 16px;
-      border: 1px solid var(--rr-border);
-      border-radius: 14px;
-      background: linear-gradient(180deg, #fffdf9 0%, #ffffff 100%);
+      margin: 28px 0 0;
+      padding: 24px 0 0;
+      border-top: 1px solid var(--rr-border);
+      background: transparent;
       color: var(--rr-text);
       font-family: var(--rr-font-body);
-      box-shadow: 0 10px 25px rgba(34, 34, 34, 0.04);
+      font-weight: var(--rr-font-weight);
+      font-style: var(--rr-font-style);
     }
 
-    #restock-raven .rr-title {
-      margin: 0 0 6px;
-      font-size: 17px;
-      line-height: 1.3;
+    #{{ rr_dom_id }} .rr-title {
+      margin: 0 0 14px;
+      font-size: 16px;
+      line-height: 1.45;
       font-weight: 700;
-      font-family: var(--rr-font-heading);
+      font-family: var(--rr-font-body);
       letter-spacing: 0.01em;
     }
 
-    #restock-raven .rr-copy {
-      margin: 0 0 12px;
-      font-size: 13px;
-      line-height: 1.45;
-      color: var(--rr-muted);
-    }
-
-    #restock-raven .rr-grid {
+    #{{ rr_dom_id }} .rr-grid {
       display: grid;
-      gap: 10px;
+      gap: 14px;
       grid-template-columns: 1fr;
+      margin: 0;
     }
 
-    #restock-raven .rr-field {
-      display: grid;
-      gap: 6px;
-    }
-
-    #restock-raven .rr-field-label {
-      font-size: 12px;
-      letter-spacing: 0.02em;
-      text-transform: uppercase;
-      color: var(--rr-muted);
-      font-weight: 700;
-    }
-
-    #restock-raven input[type="email"] {
+    #{{ rr_dom_id }} .rr-grid > input[type="email"] {
       width: 100%;
-      min-height: 42px;
+      min-height: 48px;
       border: 1px solid var(--rr-border);
-      border-radius: 10px;
-      padding: 10px 12px;
+      border-radius: 0;
+      padding: 12px 14px;
       background: #fff;
       color: var(--rr-text);
       font-family: var(--rr-font-body);
+      font-weight: var(--rr-font-weight);
+      font-style: var(--rr-font-style);
       font-size: 14px;
+      line-height: 1.4;
+      box-shadow: none;
     }
 
-    #restock-raven label {
+    #{{ rr_dom_id }} .rr-grid > input[type="email"]::placeholder {
+      color: #a5a5a5;
+      opacity: 1;
+    }
+
+    #{{ rr_dom_id }} .rr-grid > label {
       display: flex;
-      gap: 8px;
-      align-items: flex-start;
+      gap: 10px;
+      align-items: center;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
       font-size: 13px;
       line-height: 1.35;
       color: #3d3d3d;
       font-family: var(--rr-font-body);
+      font-weight: var(--rr-font-weight);
+      font-style: var(--rr-font-style);
     }
 
-    #restock-raven input[type="checkbox"] {
-      margin-top: 2px;
-      accent-color: var(--rr-accent);
+    #{{ rr_dom_id }} input[type="checkbox"] {
+      flex: 0 0 auto;
+      width: 14px;
+      height: 14px;
+      margin: 0;
+      accent-color: var(--rr-button-bg);
     }
 
-    #restock-raven button[type="submit"] {
-      min-height: 42px;
-      border: 1px solid #e09a57;
-      border-radius: 10px;
-      background: var(--rr-accent);
-      color: #1a1a1a;
-      font-weight: 700;
-      letter-spacing: 0.02em;
-      font-family: var(--rr-font-heading);
-      font-size: 14px;
+    #{{ rr_dom_id }} button[type="submit"] {
+      width: 100%;
+      min-height: 50px;
+      border: 1px solid var(--rr-button-bg);
+      border-radius: 0;
+      background: var(--rr-button-bg);
+      color: var(--rr-button-text);
+      font-weight: 400;
+      letter-spacing: 0.14em;
+      font-family: var(--rr-font-body);
+      font-size: 13px;
+      text-transform: uppercase;
       cursor: pointer;
-      transition: transform 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
-      box-shadow: 0 2px 0 rgba(0, 0, 0, 0.1);
-    }
-
-    #restock-raven button[disabled] {
-      opacity: 0.65;
-      cursor: wait;
-      transform: none;
+      transition: opacity 120ms ease, background-color 120ms ease, border-color 120ms ease;
       box-shadow: none;
     }
 
-    #restock-raven button[type="submit"]:hover {
-      transform: translateY(-1px);
-      background: #ffb676;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    #{{ rr_dom_id }} button[disabled] {
+      opacity: 0.65;
+      cursor: wait;
     }
 
-    #restock-raven button[type="submit"]:focus-visible,
-    #restock-raven input:focus-visible {
-      outline: 2px solid var(--rr-soft);
+    #{{ rr_dom_id }} button[type="submit"]:hover {
+      opacity: 0.88;
+    }
+
+    #{{ rr_dom_id }} button[type="submit"]:focus-visible,
+    #{{ rr_dom_id }} input:focus-visible {
+      outline: 2px solid var(--rr-focus);
       outline-offset: 2px;
     }
 
-    #restock-raven-result {
+    #{{ rr_dom_id }} .restock-raven-result {
       margin: 6px 0 0;
       font-size: 12px;
-      color: #4a5764;
+      color: var(--rr-muted);
       font-family: var(--rr-font-body);
+      font-weight: var(--rr-font-weight);
+      font-style: var(--rr-font-style);
     }
 
-    #restock-raven-result[data-state="success"] {
+    #{{ rr_dom_id }} .restock-raven-result[data-state="success"] {
       color: #22603a;
     }
 
-    #restock-raven-result[data-state="error"] {
+    #{{ rr_dom_id }} .restock-raven-result[data-state="error"] {
       color: #9f2f2f;
     }
   </style>
-  <div id="restock-raven" data-product-id="{{ product.id }}">
-    <p class="rr-title">Get a restock alert</p>
-    <p class="rr-copy">Leave your email and we'll let you know when this item is back.</p>
-    <form id="restock-raven-form" class="rr-grid">
-      <div class="rr-field">
-        <label class="rr-field-label" for="restock-raven-email">Email</label>
-        <input id="restock-raven-email" type="email" name="email" placeholder="you@example.com" autocomplete="email" />
-      </div>
+  <div id="{{ rr_dom_id }}" data-restock-raven data-product-id="{{ product.id }}">
+    <p class="rr-title">Let me know when this is back in stock.</p>
+    <form class="rr-grid" novalidate>
+      <input type="email" name="email" placeholder="Email" aria-label="Email" autocomplete="email" />
       <label>
         <input type="checkbox" name="marketingOptIn" value="true" />
-        Email me about new arrivals and future restocks too.
+        Fill me in on sales and new product launches
       </label>
-      <button type="submit">Email me when it's back</button>
-      <p id="restock-raven-result" style="font-size: 12px;"></p>
+      <button type="submit">Sign Up</button>
+      <p class="restock-raven-result"></p>
     </form>
   </div>
 
   <script>
     (function () {
-      var root = document.getElementById('restock-raven');
-      if (!root || !window.Shopify || !window.ShopifyAnalytics) return;
+      var root = document.getElementById('{{ rr_dom_id }}');
+      if (!root) return;
 
-      function getSelectedVariant() {
-        if (window.ShopifyAnalytics && window.ShopifyAnalytics.meta && window.ShopifyAnalytics.meta.selectedVariantId) {
-          var id = String(window.ShopifyAnalytics.meta.selectedVariantId);
-          return (window.meta && window.meta.product && window.meta.product.variants || []).find(function (v) {
-            return String(v.id) === id;
-          });
+      var variants = {{ product.variants | json }};
+      var form = root.querySelector('form');
+      var result = root.querySelector('.restock-raven-result');
+      var submitButton = root.querySelector('button[type="submit"]');
+      if (!form || !result || !submitButton || !variants || !variants.length) return;
+
+      function byId(id) {
+        for (var i = 0; i < variants.length; i++) {
+          if (String(variants[i].id) === String(id)) return variants[i];
         }
         return null;
       }
 
+      function getVariantFromDom() {
+        var select = document.querySelector('form[action*="/cart/add"] [name="id"], form[action="/cart/add"] [name="id"], [data-product-options] [name="id"]');
+        if (select && select.value) return byId(select.value);
+        return byId('{{ product.selected_or_first_available_variant.id }}');
+      }
+
       function updateVisibility() {
-        var v = getSelectedVariant();
+        var v = getVariantFromDom();
         if (!v) return;
         root.dataset.variantId = String(v.id);
         root.style.display = v.available ? 'none' : 'block';
@@ -179,15 +186,13 @@
 
       document.addEventListener('variant:change', updateVisibility);
       document.addEventListener('change', function (e) {
-        if (e.target && e.target.name === 'id') updateVisibility();
+        if (e.target && e.target.name === 'id') {
+          updateVisibility();
+        }
       });
       updateVisibility();
 
-      var form = document.getElementById('restock-raven-form');
-      var result = document.getElementById('restock-raven-result');
-      var submitButton = form.querySelector('button[type="submit"]');
-
-      form.addEventListener('submit', async function (e) {
+      form.addEventListener('submit', function (e) {
         e.preventDefault();
         result.textContent = '';
         result.dataset.state = '';
@@ -201,28 +206,32 @@
         };
 
         var endpoint = window.restockRavenEndpoint || 'https://restock-raven.vercel.app/api/restock/subscribe';
-        try {
-          var res = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-
-          if (res.ok) {
-            result.dataset.state = 'success';
-            result.textContent = "Thanks. We'll email you when it's back.";
-            form.reset();
-          } else {
-            var body = await res.json().catch(function () { return {}; });
+        fetch(endpoint, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
+          .then(function (res) {
+            if (res.ok) {
+              result.dataset.state = 'success';
+              result.textContent = "Thanks. We'll email you when it's back.";
+              form.reset();
+              return null;
+            }
+            return res.json().catch(function () {
+              return {};
+            }).then(function (body) {
+              result.dataset.state = 'error';
+              result.textContent = body.error || 'Could not subscribe.';
+            });
+          })
+          .catch(function () {
             result.dataset.state = 'error';
-            result.textContent = body.error || 'Could not subscribe.';
-          }
-        } catch (error) {
-          result.dataset.state = 'error';
-          result.textContent = 'Could not subscribe right now. Please try again.';
-        } finally {
-          submitButton.disabled = false;
-        }
+            result.textContent = 'Could not subscribe.';
+          })
+          .finally(function () {
+            submitButton.disabled = false;
+          });
       });
     })();
   </script>
