@@ -25,6 +25,8 @@ Twilio is optional:
 - `restock_events` gets `queued` then `processed`
 - `message_log` has one row per channel
 - `restock_subscriptions.notified_at` is set once
+- opted-in email subscribers are added to Shopify Email marketing, then the deliverable email is redacted in Restock Raven
+- if Shopify marketing sync logs a scope/API failure, confirm `write_customers` is enabled; the email is intentionally left unredacted so it is not lost before sync
 - `npm run healthcheck` passes
 - browser subscribe requests work from the storefront domain and are blocked from unrelated origins
 

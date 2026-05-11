@@ -2,6 +2,9 @@ import { sql } from "@/lib/db/client";
 import { randomToken } from "@/lib/utils/crypto";
 import type { RestockSubscription } from "@/lib/types";
 
+const CLEARED_EMAIL_DOMAIN = "restock-raven.invalid";
+const CLEARED_EMAIL_LIKE_PATTERN = `cleared+%@${CLEARED_EMAIL_DOMAIN}`;
+
 export interface UpsertSubscriptionInput {
   email: string | null;
   phone: string | null;
@@ -28,6 +31,13 @@ export interface SubscribedVariant {
   variant_id: string;
   subscription_count: number;
   active_subscription_count: number;
+}
+
+export function isClearedEmailPlaceholder(email: string | null | undefined): boolean {
+  const normalized = email?.trim().toLowerCase();
+  return Boolean(
+    normalized?.startsWith("cleared+") && normalized.endsWith(`@${CLEARED_EMAIL_DOMAIN}`)
+  );
 }
 
 export async function upsertSubscription(
@@ -206,14 +216,39 @@ export async function requeueSubscription(subscriptionId: string): Promise<boole
     UPDATE restock_subscriptions
     SET status = 'active', notified_at = NULL
     WHERE id = ${subscriptionId}
+      AND (
+        phone IS NOT NULL
+        OR (email IS NOT NULL AND email NOT ILIKE ${CLEARED_EMAIL_LIKE_PATTERN})
+      )
   `;
   return Boolean(rowCount);
 }
 
-export async function markSubscriptionNotified(subscriptionId: string): Promise<void> {
-  await sql`
+export async function markSubscriptionNotified(
+  subscriptionId: string,
+  options: { clearEmail?: boolean } = {},
+  db: SqlTag = sql
+): Promise<void> {
+  const clearEmail = Boolean(options.clearEmail);
+  await db`
     UPDATE restock_subscriptions
-    SET status = 'notified', notified_at = NOW()
+    SET
+      status = 'notified',
+      notified_at = NOW(),
+      email = CASE
+        WHEN ${clearEmail}::boolean
+          AND email IS NOT NULL
+          AND email NOT ILIKE ${CLEARED_EMAIL_LIKE_PATTERN}
+        THEN 'cleared+' || id::text || ${`@${CLEARED_EMAIL_DOMAIN}`}
+        ELSE email
+      END,
+      metadata = CASE
+        WHEN ${clearEmail}::boolean
+          AND email IS NOT NULL
+          AND email NOT ILIKE ${CLEARED_EMAIL_LIKE_PATTERN}
+        THEN metadata || jsonb_build_object('emailClearedAt', NOW())
+        ELSE metadata
+      END
     WHERE id = ${subscriptionId}
   `;
 }
@@ -225,6 +260,10 @@ export async function getActiveSubscriptionsByVariant(variantId: string): Promis
     WHERE variant_id = ${variantId}
       AND status = 'active'
       AND notified_at IS NULL
+      AND (
+        phone IS NOT NULL
+        OR (email IS NOT NULL AND email NOT ILIKE ${CLEARED_EMAIL_LIKE_PATTERN})
+      )
   `;
   return rows;
 }

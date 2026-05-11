@@ -2,11 +2,16 @@ import { claimQueuedEvents, markEventIgnored, markEventProcessed } from "@/lib/d
 import { logMessage } from "@/lib/db/message-log";
 import {
   getActiveSubscriptionsByVariant,
+  isClearedEmailPlaceholder,
   markSubscriptionNotified
 } from "@/lib/db/subscriptions";
 import { sendRestockEmail } from "@/lib/providers/email";
 import { sendRestockSms } from "@/lib/providers/sms";
-import { getVariantRestockEmailContext, isVariantSellableOnline } from "@/lib/shopify/admin";
+import {
+  getVariantRestockEmailContext,
+  isVariantSellableOnline,
+  subscribeEmailToShopifyMarketing
+} from "@/lib/shopify/admin";
 import { isTwilioConfigured } from "@/lib/utils/env";
 
 export interface ProcessResult {
@@ -36,11 +41,13 @@ export async function processRestockQueue(limit = 100): Promise<ProcessResult> {
     for (const subscription of subscriptions) {
       subscriptionsProcessed += 1;
       let allChannelsSucceeded = true;
+      let emailNotified = false;
+      const email = isClearedEmailPlaceholder(subscription.email) ? null : subscription.email;
 
-      if (subscription.email) {
+      if (email) {
         try {
           const providerMessageId = await sendRestockEmail({
-            to: subscription.email,
+            to: email,
             productId: subscription.product_id,
             variantId: subscription.variant_id,
             unsubscribeToken: subscription.unsubscribe_token,
@@ -57,6 +64,7 @@ export async function processRestockQueue(limit = 100): Promise<ProcessResult> {
             status: "sent"
           });
           messagesSent += 1;
+          emailNotified = true;
         } catch (error) {
           allChannelsSucceeded = false;
           messagesFailed += 1;
@@ -99,7 +107,23 @@ export async function processRestockQueue(limit = 100): Promise<ProcessResult> {
       }
 
       if (allChannelsSucceeded) {
-        await markSubscriptionNotified(subscription.id);
+        let clearEmail = emailNotified;
+        if (emailNotified && email && subscription.marketing_opt_in) {
+          try {
+            await subscribeEmailToShopifyMarketing({
+              email,
+              consentedAt: subscription.marketing_opt_in_at ?? subscription.email_consent_at
+            });
+          } catch (error) {
+            clearEmail = false;
+            const message = error instanceof Error ? error.message : "Unknown Shopify marketing error";
+            console.warn(
+              `Shopify marketing sync failed for restock subscription ${subscription.id}: ${message}`
+            );
+          }
+        }
+
+        await markSubscriptionNotified(subscription.id, { clearEmail });
       }
     }
 

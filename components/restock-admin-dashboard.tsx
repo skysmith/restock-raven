@@ -4,6 +4,7 @@ import { RestockTriggerPanel } from "@/components/restock-trigger-panel";
 import {
   countSubscriptions,
   getSubscriptionStatusCounts,
+  isClearedEmailPlaceholder,
   listSubscriptions,
   listSubscribedVariants,
   requeueSubscription
@@ -42,6 +43,16 @@ function formatCell(value: unknown): string {
   if (value === null || value === undefined || value === "") return "-";
   if (value instanceof Date) return value.toISOString();
   return String(value);
+}
+
+function formatEmailCell(email: string | null): string {
+  if (!email) return "-";
+  return isClearedEmailPlaceholder(email) ? "Cleared after alert" : email;
+}
+
+function formatContactCell(email: string | null, phone: string | null): string {
+  const formattedEmail = formatEmailCell(email);
+  return formattedEmail !== "-" ? formattedEmail : phone ?? "-";
 }
 
 function formatProductName(variantMeta: VariantAdminMeta | undefined): string {
@@ -1098,7 +1109,7 @@ export async function RestockAdminDashboard(props: {
             const variantMeta = variantMetaById[subscription.variant_id];
             return (
               <tr key={subscription.id}>
-                <td>{subscription.email ?? "-"}</td>
+                <td>{formatEmailCell(subscription.email)}</td>
                 <td>{subscription.phone ?? "-"}</td>
                 <td title={`Variant ID: ${subscription.variant_id}`}>{formatProductName(variantMeta)}</td>
                 <td>{formatVariantDetails(variantMeta)}</td>
@@ -1155,7 +1166,7 @@ export async function RestockAdminDashboard(props: {
                   <td>{formatCell(msg.sent_at)}</td>
                   <td>{msg.channel}</td>
                   <td>{msg.status}</td>
-                  <td>{msg.email ?? msg.phone ?? "-"}</td>
+                  <td>{formatContactCell(msg.email, msg.phone)}</td>
                   <td>{msg.variant_id}</td>
                   <td>{msg.provider_message_id ?? "-"}</td>
                   <td>{msg.error ?? "-"}</td>

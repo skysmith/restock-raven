@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { listSubscriptions } from "@/lib/db/subscriptions";
+import { isClearedEmailPlaceholder, listSubscriptions } from "@/lib/db/subscriptions";
 import type { SortDirection, SubscriptionSortKey } from "@/lib/db/subscriptions";
 import { getVariantAdminMetaMap } from "@/lib/shopify/admin";
 
@@ -39,8 +39,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   const enrichedSubscriptions = subscriptions.map((subscription) => {
     const variantMeta = variantMetaById[subscription.variant_id];
+    const emailCleared = isClearedEmailPlaceholder(subscription.email);
     return {
       ...subscription,
+      email: emailCleared ? null : subscription.email,
+      email_cleared: emailCleared,
       product_title: variantMeta?.productTitle ?? null,
       sku: variantMeta?.sku ?? null,
       variant_title: variantMeta?.variantTitle ?? null

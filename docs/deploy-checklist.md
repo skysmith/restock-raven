@@ -27,7 +27,7 @@
 
 ## Integrations
 - [ ] Shopify custom app scopes set.
-  Required: `read_inventory`, `read_orders`, `read_products`, `read_locations`, `write_webhooks`
+  Required: `read_inventory`, `read_orders`, `read_products`, `read_locations`, `write_webhooks`, `write_customers`
 - [ ] Shopify webhook configured:
   - [ ] `inventory_levels/update` -> `/api/webhooks/inventory`
 - [ ] Twilio inbound webhook configured:

@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { requireEmbeddedShopifySession } from "@/lib/shopify/embedded-auth";
 import { countMessageLog, listMessageLog } from "@/lib/db/message-log";
+import { isClearedEmailPlaceholder } from "@/lib/db/subscriptions";
 
 type MessageStatusFilter = "all" | "sent" | "failed";
 type ChannelFilter = "all" | "email" | "sms";
@@ -35,6 +36,13 @@ export async function GET(request: NextRequest) {
     ok: true,
     shop: auth.session.shop,
     total,
-    messages
+    messages: messages.map((message) => {
+      const emailCleared = isClearedEmailPlaceholder(message.email);
+      return {
+        ...message,
+        email: emailCleared ? null : message.email,
+        email_cleared: emailCleared
+      };
+    })
   });
 }

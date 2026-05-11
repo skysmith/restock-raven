@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { listSubscriptions } from "@/lib/db/subscriptions";
+import { isClearedEmailPlaceholder, listSubscriptions } from "@/lib/db/subscriptions";
 
 function escapeCsv(value: unknown): string {
   if (value === null || value === undefined) return "";
@@ -8,6 +8,11 @@ function escapeCsv(value: unknown): string {
     return `"${str.replaceAll('"', '""')}"`;
   }
   return str;
+}
+
+function exportEmail(email: string | null): string | null {
+  if (!email) return null;
+  return isClearedEmailPlaceholder(email) ? null : email;
 }
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
@@ -39,7 +44,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     lines.push(
       [
         row.id,
-        row.email,
+        exportEmail(row.email),
         row.phone,
         row.variant_id,
         row.product_id,

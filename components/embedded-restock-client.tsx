@@ -36,6 +36,7 @@ interface EmbeddedSubscriptionsResponse {
 interface EmbeddedSubscription {
   id: string;
   email: string | null;
+  email_cleared?: boolean;
   phone: string | null;
   variant_id: string;
   product_title: string | null;
@@ -91,6 +92,7 @@ interface EmbeddedMessagesResponse {
     channel: "email" | "sms";
     status: "sent" | "failed";
     email: string | null;
+    email_cleared?: boolean;
     phone: string | null;
     variant_id: string;
     provider_message_id: string | null;
@@ -108,6 +110,17 @@ declare global {
 }
 
 const HOST_STORAGE_KEY = "restock-raven.shopify-host";
+
+function isClearedEmailPlaceholder(email: string | null | undefined): boolean {
+  const normalized = email?.trim().toLowerCase();
+  return Boolean(normalized?.startsWith("cleared+") && normalized.endsWith("@restock-raven.invalid"));
+}
+
+function formatContact(email: string | null, phone: string | null, emailCleared = false): string {
+  if (email && !isClearedEmailPlaceholder(email)) return email;
+  if (email || emailCleared) return "Cleared after alert";
+  return phone || "-";
+}
 
 interface EmbeddedDiagnostics {
   hostParamPresent: boolean;
@@ -765,7 +778,9 @@ export function EmbeddedRestockClient() {
                         const variantDetails = getSubscriptionVariantDetails(subscription);
                         return (
                           <tr key={subscription.id}>
-                            <td style={styles.td}>{subscription.email || subscription.phone || "-"}</td>
+                            <td style={styles.td}>
+                              {formatContact(subscription.email, subscription.phone, subscription.email_cleared)}
+                            </td>
                             <td style={styles.td} title={`Variant ID: ${subscription.variant_id}`}>
                               <span style={styles.primaryCell}>{getSubscriptionProductName(subscription)}</span>
                               {variantDetails ? <span style={styles.secondaryCell}>{variantDetails}</span> : null}
@@ -812,7 +827,9 @@ export function EmbeddedRestockClient() {
                           <td style={styles.td}>{new Date(message.sent_at).toLocaleString()}</td>
                           <td style={styles.td}>{message.channel}</td>
                           <td style={styles.td}>{message.status}</td>
-                          <td style={styles.td}>{message.email || message.phone || "-"}</td>
+                          <td style={styles.td}>
+                            {formatContact(message.email, message.phone, message.email_cleared)}
+                          </td>
                           <td style={styles.td}>{message.variant_id}</td>
                           <td style={styles.td}>{message.error || "-"}</td>
                         </tr>

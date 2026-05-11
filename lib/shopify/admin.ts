@@ -1,7 +1,19 @@
 import { getEnv } from "@/lib/utils/env";
 
-const apiVersion = "2025-01";
+const apiVersion = "2025-10";
 let cachedAccessToken: { token: string; expiresAt: number } | null = null;
+
+type ShopifyUserError = { field: string[] | null; message: string };
+
+function formatShopifyUserErrors(errors: ShopifyUserError[]): string {
+  return errors.map((error) => error.message).join(", ");
+}
+
+function normalizeConsentTimestamp(value: string | null | undefined): string {
+  if (!value) return new Date().toISOString();
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
+}
 
 async function getShopifyAccessToken(): Promise<string> {
   if (process.env.SHOPIFY_ADMIN_TOKEN) {
@@ -70,6 +82,93 @@ async function shopifyGraphql<T>(query: string, variables: Record<string, unknow
   }
 
   return data.data;
+}
+
+export async function subscribeEmailToShopifyMarketing(params: {
+  email: string;
+  consentedAt?: string | null;
+}): Promise<{ customerId: string }> {
+  const email = params.email.trim().toLowerCase();
+  if (!email) {
+    throw new Error("Cannot sync Shopify marketing consent without an email");
+  }
+
+  const upsertMutation = `
+    mutation RestockRavenCustomerSet($input: CustomerSetInput!, $identifier: CustomerSetIdentifiers) {
+      customerSet(input: $input, identifier: $identifier) {
+        customer {
+          id
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+  `;
+
+  const upserted = await shopifyGraphql<{
+    customerSet: {
+      customer: { id: string } | null;
+      userErrors: ShopifyUserError[];
+    };
+  }>(upsertMutation, {
+    input: { email },
+    identifier: { email }
+  });
+
+  if (upserted.customerSet.userErrors.length) {
+    throw new Error(`Shopify customer sync failed: ${formatShopifyUserErrors(upserted.customerSet.userErrors)}`);
+  }
+
+  const customerId = upserted.customerSet.customer?.id;
+  if (!customerId) {
+    throw new Error("Shopify customer sync failed: no customer returned");
+  }
+
+  const consentMutation = `
+    mutation RestockRavenEmailMarketingConsent($input: CustomerEmailMarketingConsentUpdateInput!) {
+      customerEmailMarketingConsentUpdate(input: $input) {
+        customer {
+          id
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+  `;
+
+  const consented = await shopifyGraphql<{
+    customerEmailMarketingConsentUpdate: {
+      customer: { id: string } | null;
+      userErrors: ShopifyUserError[];
+    };
+  }>(consentMutation, {
+    input: {
+      customerId,
+      emailMarketingConsent: {
+        marketingOptInLevel: "SINGLE_OPT_IN",
+        marketingState: "SUBSCRIBED",
+        consentUpdatedAt: normalizeConsentTimestamp(params.consentedAt)
+      }
+    }
+  });
+
+  if (consented.customerEmailMarketingConsentUpdate.userErrors.length) {
+    throw new Error(
+      `Shopify email marketing sync failed: ${formatShopifyUserErrors(
+        consented.customerEmailMarketingConsentUpdate.userErrors
+      )}`
+    );
+  }
+
+  if (!consented.customerEmailMarketingConsentUpdate.customer) {
+    throw new Error("Shopify email marketing sync failed: no customer returned");
+  }
+
+  return { customerId };
 }
 
 export async function ensureInventoryWebhook(callbackUrl: string): Promise<{

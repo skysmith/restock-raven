@@ -22,6 +22,8 @@ Private single-store Shopify restock alerts (variant-specific) using Vercel, Neo
 - Shopify inventory webhook ingest (`inventory_levels/update`) with HMAC verification
 - Idempotent queueing for `0 -> >0` transitions
 - Cron job processor for email + SMS sends
+- Shopify Email marketing opt-in sync for subscribers who checked the marketing box
+- Email addresses are redacted from Restock Raven after successful email notification and any requested Shopify marketing sync
 - SMS compliance language (`Reply STOP to opt out`)
 - One-click email unsubscribe link (`/api/restock/unsubscribe?t=...`)
 - Basic protected admin page (`/admin/restock`) with search + resend/requeue
@@ -92,7 +94,7 @@ npm run healthcheck
 - Shopify auth supports either:
   - `SHOPIFY_ADMIN_TOKEN` (legacy static token), or
   - `SHOPIFY_CLIENT_ID` + `SHOPIFY_CLIENT_SECRET` (Dev Dashboard client credentials exchange).
-- Shopify custom app scopes should include `read_inventory`, `read_orders`, `read_products`, `read_locations`, and `write_webhooks`.
+- Shopify custom app scopes should include `read_inventory`, `read_orders`, `read_products`, `read_locations`, `write_webhooks`, and `write_customers`.
 - Optional env for better customer email links:
   - `SHOPIFY_STOREFRONT_BASE_URL` (ex: `https://clementinekids.com`) to force product links to your custom domain.
 - Restock trigger mode:

@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { unsubscribeAllByToken, upsertSubscription } from "@/lib/db/subscriptions";
+import {
+  isClearedEmailPlaceholder,
+  markSubscriptionNotified,
+  unsubscribeAllByToken,
+  upsertSubscription
+} from "@/lib/db/subscriptions";
 
 type SqlCall = {
   strings: TemplateStringsArray;
@@ -74,5 +79,32 @@ describe("unsubscribeAllByToken", () => {
     const updated = await unsubscribeAllByToken("missing", fakeSql as never);
     expect(updated).toBe(0);
     expect(fakeSql).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("markSubscriptionNotified", () => {
+  it("can clear the deliverable email while marking the subscription notified", async () => {
+    const calls: SqlCall[] = [];
+    const fakeSql = vi.fn(async (strings: TemplateStringsArray, ...values: unknown[]) => {
+      calls.push({ strings, values });
+      return { rows: [], rowCount: 1 };
+    });
+
+    await markSubscriptionNotified("sub_1", { clearEmail: true }, fakeSql as never);
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0].strings.join(" ")).toContain("status = 'notified'");
+    expect(calls[0].strings.join(" ")).toContain("cleared+");
+    expect(calls[0].values).toContain(true);
+    expect(calls[0].values).toContain("@restock-raven.invalid");
+    expect(calls[0].values).toContain("sub_1");
+  });
+});
+
+describe("isClearedEmailPlaceholder", () => {
+  it("detects Restock Raven cleared email placeholders", () => {
+    expect(isClearedEmailPlaceholder("cleared+123@restock-raven.invalid")).toBe(true);
+    expect(isClearedEmailPlaceholder("customer@example.com")).toBe(false);
+    expect(isClearedEmailPlaceholder(null)).toBe(false);
   });
 });
