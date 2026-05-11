@@ -1,18 +1,18 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
+import { RestockTriggerPanel } from "@/components/restock-trigger-panel";
 import {
   countSubscriptions,
   getSubscriptionStatusCounts,
   listSubscriptions,
+  listSubscribedVariants,
   requeueSubscription
 } from "@/lib/db/subscriptions";
 import type { SortDirection, SubscriptionSortKey } from "@/lib/db/subscriptions";
 import {
-  countEvents,
   getEventStatusCounts,
   getVariantInventoryState,
   insertRestockEvent,
-  listRecentEvents
 } from "@/lib/db/events";
 import {
   countMessageLog,
@@ -21,16 +21,15 @@ import {
 } from "@/lib/db/message-log";
 import { getRestockMinQtyFromZero } from "@/lib/jobs/transition";
 import { processRestockQueue } from "@/lib/jobs/process-restock";
+import { buildTriggerVariantOptions, type TriggerVariantOption } from "@/lib/restock/trigger-options";
 import { getVariantAdminMetaMap, type VariantAdminMeta } from "@/lib/shopify/admin";
 
 type SubscriptionStatusFilter = "all" | "active" | "notified" | "unsubscribed";
-type EventStatusFilter = "all" | "received" | "queued" | "processed" | "ignored";
 type MessageStatusFilter = "all" | "sent" | "failed";
 type ChannelFilter = "all" | "email" | "sms";
 type DashboardShell = "standalone" | "embedded";
 
 const SUB_PAGE_SIZE = 50;
-const EVENT_PAGE_SIZE = 50;
 const MSG_PAGE_SIZE = 100;
 
 function toPositiveInt(value: string | undefined, fallback = 1): number {
@@ -84,6 +83,39 @@ function sortSubscriptionsByProduct<T extends { variant_id: string }>(
   });
 }
 
+function getSystemStatus(
+  eventCounts: Record<string, number>,
+  messageCounts: Record<string, number>
+): { label: string; detail: string; tone: "good" | "warning" | "danger" } {
+  const queued = eventCounts.queued ?? 0;
+  const processing = eventCounts.received ?? 0;
+  const pending = queued + processing;
+  const processed = eventCounts.processed ?? 0;
+  const failed = messageCounts.failed ?? 0;
+
+  if (failed > 0) {
+    return {
+      label: "Needs attention",
+      detail: `${failed} failed delivery attempt${failed === 1 ? "" : "s"}.`,
+      tone: "danger"
+    };
+  }
+
+  if (pending > 0) {
+    return {
+      label: "Queue waiting",
+      detail: `${pending} restock alert${pending === 1 ? "" : "s"} waiting to process.`,
+      tone: "warning"
+    };
+  }
+
+  return {
+    label: "Working",
+    detail: `Queue clear. ${processed} processed restock alert${processed === 1 ? "" : "s"}.`,
+    tone: "good"
+  };
+}
+
 function SortHeader(props: {
   label: string;
   sortBy: SubscriptionSortKey;
@@ -111,27 +143,23 @@ function buildHref(params: {
   basePath: string;
   q?: string;
   status: SubscriptionStatusFilter;
-  eventStatus: EventStatusFilter;
   msgStatus: MessageStatusFilter;
   channel: ChannelFilter;
   debug?: boolean;
   subSort: SubscriptionSortKey;
   subDir: SortDirection;
   subPage: number;
-  eventPage: number;
   msgPage: number;
 }): string {
   const qs = new URLSearchParams();
   if (params.q) qs.set("q", params.q);
   if (params.status !== "all") qs.set("status", params.status);
-  if (params.eventStatus !== "all") qs.set("eventStatus", params.eventStatus);
   if (params.msgStatus !== "all") qs.set("msgStatus", params.msgStatus);
   if (params.channel !== "all") qs.set("channel", params.channel);
   if (params.debug) qs.set("debug", "1");
   if (params.subSort !== "created") qs.set("subSort", params.subSort);
   if (params.subDir !== getDefaultSortDirection(params.subSort)) qs.set("subDir", params.subDir);
   if (params.subPage > 1) qs.set("subPage", String(params.subPage));
-  if (params.eventPage > 1) qs.set("eventPage", String(params.eventPage));
   if (params.msgPage > 1) qs.set("msgPage", String(params.msgPage));
   const query = qs.toString();
   return query ? `${params.basePath}?${query}` : params.basePath;
@@ -269,14 +297,12 @@ export async function RestockAdminDashboard(props: {
   searchParams: Promise<{
     q?: string;
     status?: SubscriptionStatusFilter;
-    eventStatus?: EventStatusFilter;
     msgStatus?: MessageStatusFilter;
     channel?: ChannelFilter;
     debug?: string;
     subSort?: string;
     subDir?: string;
     subPage?: string;
-    eventPage?: string;
     msgPage?: string;
   }>;
 }) {
@@ -286,14 +312,12 @@ export async function RestockAdminDashboard(props: {
   const {
     q,
     status = "all",
-    eventStatus = "all",
     msgStatus = "all",
     channel = "all",
     debug,
     subSort,
     subDir,
     subPage,
-    eventPage,
     msgPage
   } = await props.searchParams;
   const showDebug = debug === "1";
@@ -301,7 +325,6 @@ export async function RestockAdminDashboard(props: {
   const subscriptionSortDirection = getSortDirection(subDir, subscriptionSortBy);
 
   const currentSubPage = toPositiveInt(subPage, 1);
-  const currentEventPage = toPositiveInt(eventPage, 1);
   const currentMsgPage = toPositiveInt(msgPage, 1);
   const subscriptionOffset = (currentSubPage - 1) * SUB_PAGE_SIZE;
 
@@ -310,11 +333,11 @@ export async function RestockAdminDashboard(props: {
   let subscriptionCounts: Record<string, number> = { active: 0, notified: 0, unsubscribed: 0, total: 0 };
   let eventCounts: Record<string, number> = { received: 0, queued: 0, processed: 0, ignored: 0, total: 0 };
   let messageCounts: Record<string, number> = { sent: 0, failed: 0, total: 0 };
-  let events = [] as Awaited<ReturnType<typeof listRecentEvents>>;
-  let eventsTotal = 0;
   let messageLog = [] as Awaited<ReturnType<typeof listMessageLog>>;
   let messageLogTotal = 0;
   let variantMetaById: Record<string, VariantAdminMeta> = {};
+  let subscribedVariants = [] as Awaited<ReturnType<typeof listSubscribedVariants>>;
+  let triggerVariantOptions: TriggerVariantOption[] = [];
   let shouldSliceProductSort = false;
   let dashboardError: string | null = null;
 
@@ -325,10 +348,9 @@ export async function RestockAdminDashboard(props: {
       subscriptionCounts,
       eventCounts,
       messageCounts,
-      events,
-      eventsTotal,
       messageLog,
-      messageLogTotal
+      messageLogTotal,
+      subscribedVariants
     ] = await Promise.all([
       listSubscriptions(q, status, {
         limit: SUB_PAGE_SIZE,
@@ -340,8 +362,6 @@ export async function RestockAdminDashboard(props: {
       getSubscriptionStatusCounts(),
       getEventStatusCounts(),
       getMessageStatusCounts(),
-      listRecentEvents(EVENT_PAGE_SIZE, eventStatus, (currentEventPage - 1) * EVENT_PAGE_SIZE),
-      countEvents(eventStatus),
       listMessageLog({
         query: q,
         status: msgStatus,
@@ -349,7 +369,8 @@ export async function RestockAdminDashboard(props: {
         limit: MSG_PAGE_SIZE,
         offset: (currentMsgPage - 1) * MSG_PAGE_SIZE
       }),
-      countMessageLog({ query: q, status: msgStatus, channel })
+      countMessageLog({ query: q, status: msgStatus, channel }),
+      listSubscribedVariants()
     ]);
 
     if (subscriptionSortBy === "product" && subscriptionsTotal > SUB_PAGE_SIZE) {
@@ -363,7 +384,13 @@ export async function RestockAdminDashboard(props: {
     }
 
     try {
-      variantMetaById = await getVariantAdminMetaMap(subscriptions.map((s) => s.variant_id));
+      const variantIds = Array.from(
+        new Set([
+          ...subscriptions.map((subscription) => subscription.variant_id),
+          ...subscribedVariants.map((subscribedVariant) => subscribedVariant.variant_id)
+        ])
+      );
+      variantMetaById = await getVariantAdminMetaMap(variantIds);
       if (subscriptionSortBy === "product") {
         subscriptions = sortSubscriptionsByProduct(subscriptions, variantMetaById, subscriptionSortDirection);
         if (shouldSliceProductSort) {
@@ -373,6 +400,7 @@ export async function RestockAdminDashboard(props: {
     } catch {
       variantMetaById = {};
     }
+    triggerVariantOptions = buildTriggerVariantOptions(subscribedVariants, variantMetaById);
   } catch (error) {
     dashboardError = error instanceof Error ? error.message : "Unknown dashboard data error";
   }
@@ -385,16 +413,15 @@ export async function RestockAdminDashboard(props: {
     basePath,
     q,
     status,
-    eventStatus,
     msgStatus,
     channel,
     debug: showDebug,
     subSort: subscriptionSortBy,
     subDir: subscriptionSortDirection,
     subPage: currentSubPage,
-    eventPage: currentEventPage,
     msgPage: currentMsgPage
   };
+  const systemStatus = getSystemStatus(eventCounts, messageCounts);
 
   return (
     <main className="rr-admin">
@@ -429,11 +456,19 @@ export async function RestockAdminDashboard(props: {
             var(--rr-bg);
           min-height: 100vh;
           padding: 28px 18px 60px;
+          overflow-x: hidden;
+        }
+
+        .rr-admin,
+        .rr-admin * {
+          box-sizing: border-box;
         }
 
         .rr-admin .rr-container {
+          width: 100%;
           max-width: var(--rr-max);
           margin: 0 auto;
+          min-width: 0;
         }
 
         .rr-admin h1 {
@@ -456,6 +491,7 @@ export async function RestockAdminDashboard(props: {
           color: var(--rr-muted);
           font-size: 15px;
           line-height: 1.5;
+          overflow-wrap: break-word;
         }
 
         .rr-admin .rr-hero {
@@ -464,6 +500,7 @@ export async function RestockAdminDashboard(props: {
           justify-content: space-between;
           gap: 16px;
           margin-bottom: 18px;
+          min-width: 0;
         }
 
         .rr-admin .rr-title {
@@ -490,6 +527,7 @@ export async function RestockAdminDashboard(props: {
         .rr-admin .rr-grid {
           display: grid;
           gap: var(--rr-gap);
+          min-width: 0;
         }
 
         .rr-admin .rr-grid--stats {
@@ -510,11 +548,40 @@ export async function RestockAdminDashboard(props: {
           color: var(--rr-text);
         }
 
+        .rr-admin .rr-status-card {
+          display: grid;
+          gap: 7px;
+        }
+
+        .rr-admin .rr-status-label {
+          width: max-content;
+          border-radius: 999px;
+          padding: 5px 10px;
+          font-size: 13px;
+          font-weight: 800;
+        }
+
+        .rr-admin .rr-status-label--good {
+          background: rgba(2, 122, 72, 0.12);
+          color: #027a48;
+        }
+
+        .rr-admin .rr-status-label--warning {
+          background: rgba(181, 71, 8, 0.12);
+          color: #b54708;
+        }
+
+        .rr-admin .rr-status-label--danger {
+          background: rgba(180, 35, 24, 0.12);
+          color: #b42318;
+        }
+
         .rr-admin .rr-controls {
           display: grid;
-          grid-template-columns: 1.6fr repeat(4, minmax(0, 1fr)) auto auto;
+          grid-template-columns: 1.6fr repeat(3, minmax(0, 1fr)) auto auto;
           gap: 10px;
           align-items: center;
+          min-width: 0;
         }
 
         .rr-admin .rr-link-row {
@@ -529,6 +596,7 @@ export async function RestockAdminDashboard(props: {
         .rr-admin input[type="number"],
         .rr-admin select {
           width: 100%;
+          min-width: 0;
           height: 44px;
           padding: 0 12px;
           border-radius: 12px;
@@ -576,6 +644,16 @@ export async function RestockAdminDashboard(props: {
         .rr-admin .rr-btn:hover {
           transform: translateY(-1px);
           box-shadow: 0 10px 22px rgba(16, 24, 40, 0.12);
+        }
+
+        .rr-admin .rr-btn:disabled {
+          opacity: 0.55;
+          cursor: not-allowed;
+        }
+
+        .rr-admin .rr-btn:disabled:hover {
+          transform: none;
+          box-shadow: var(--rr-shadow-sm);
         }
 
         .rr-admin .rr-btn:active {
@@ -700,8 +778,9 @@ export async function RestockAdminDashboard(props: {
           align-items: center;
         }
 
-        .rr-admin .rr-action-form input[type="text"] {
-          max-width: 220px;
+        .rr-admin .rr-action-form select {
+          min-width: 260px;
+          max-width: 360px;
         }
 
         .rr-admin .rr-action-card {
@@ -719,8 +798,88 @@ export async function RestockAdminDashboard(props: {
           border-color: var(--rr-warn-border);
         }
 
+        .rr-admin .rr-trigger-panel {
+          display: grid;
+          gap: 14px;
+          margin: 22px 0 12px;
+        }
+
+        .rr-admin .rr-trigger-header {
+          display: grid;
+          gap: 6px;
+        }
+
+        .rr-admin .rr-trigger-header h2 {
+          margin: 0;
+        }
+
+        .rr-admin .rr-status-banner {
+          border: 1px solid rgba(141, 76, 0, 0.22);
+          border-radius: var(--rr-radius-sm);
+          background: rgba(255, 247, 222, 0.9);
+          color: #6f4800;
+          padding: 12px 14px;
+          line-height: 1.4;
+        }
+
+        .rr-admin .rr-trigger-primary {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          gap: 12px;
+          align-items: end;
+          min-width: 0;
+        }
+
+        .rr-admin .rr-trigger-select {
+          display: grid;
+          gap: 6px;
+          color: var(--rr-muted);
+          font-size: 13px;
+          font-weight: 700;
+          min-width: 0;
+        }
+
+        .rr-admin .rr-trigger-select select {
+          color: var(--rr-text);
+          font-size: 15px;
+          font-weight: 600;
+        }
+
+        .rr-admin .rr-btn--send {
+          min-width: 170px;
+        }
+
+        .rr-admin .rr-advanced-actions {
+          border-top: 1px solid rgba(16, 24, 40, 0.08);
+          padding-top: 12px;
+        }
+
+        .rr-admin .rr-advanced-actions summary,
+        .rr-admin .rr-maintenance summary {
+          cursor: pointer;
+          color: var(--rr-primary);
+          font-weight: 750;
+          width: max-content;
+        }
+
+        .rr-admin .rr-advanced-grid {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          margin-top: 12px;
+        }
+
+        .rr-admin .rr-maintenance {
+          display: grid;
+          gap: 10px;
+          margin: 0 0 24px;
+          background: var(--rr-warn-bg);
+          border-color: var(--rr-warn-border);
+        }
+
         .rr-admin .rr-table-wrap {
           overflow-x: auto;
+          max-width: 100%;
         }
 
         .rr-admin .rr-empty {
@@ -734,12 +893,51 @@ export async function RestockAdminDashboard(props: {
         @media (max-width: 980px) {
           .rr-admin .rr-grid--stats,
           .rr-admin .rr-grid--actions,
+          .rr-admin .rr-trigger-primary,
           .rr-admin .rr-controls,
           .rr-admin .rr-hero {
             grid-template-columns: 1fr;
             display: grid;
           }
           .rr-admin h1 { font-size: 36px; }
+        }
+
+        @media (max-width: 520px) {
+          .rr-admin {
+            padding: 24px 12px 48px;
+          }
+
+          .rr-admin h1 {
+            font-size: 32px;
+            letter-spacing: 0;
+          }
+
+          .rr-admin h2 {
+            font-size: 24px;
+          }
+
+          .rr-admin .rr-card--padded {
+            padding: 14px;
+          }
+
+          .rr-admin .rr-trigger-primary {
+            align-items: stretch;
+          }
+
+          .rr-admin .rr-trigger-primary form,
+          .rr-admin .rr-trigger-primary button,
+          .rr-admin .rr-controls .rr-btn {
+            width: 100%;
+          }
+
+          .rr-admin .rr-advanced-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+          }
+
+          .rr-admin table {
+            min-width: 720px;
+          }
         }
       `}</style>
       <div className="rr-container">
@@ -768,12 +966,12 @@ export async function RestockAdminDashboard(props: {
           <div>Notified: {subscriptionCounts.notified ?? 0}</div>
           <div>Unsubscribed: {subscriptionCounts.unsubscribed ?? 0}</div>
         </div>
-        <div className="rr-kpi rr-card rr-card--tight">
-          <strong>Events</strong>
-          <div>Total: {eventCounts.total ?? 0}</div>
-          <div>Queued: {eventCounts.queued ?? 0}</div>
-          <div>Processed: {eventCounts.processed ?? 0}</div>
-          <div>Ignored: {eventCounts.ignored ?? 0}</div>
+        <div className="rr-kpi rr-status-card rr-card rr-card--tight">
+          <strong>System status</strong>
+          <span className={`rr-status-label rr-status-label--${systemStatus.tone}`}>
+            {systemStatus.label}
+          </span>
+          <div>{systemStatus.detail}</div>
         </div>
         <div className="rr-kpi rr-card rr-card--tight">
           <strong>Messages</strong>
@@ -798,13 +996,6 @@ export async function RestockAdminDashboard(props: {
           <option value="notified">Notified</option>
           <option value="unsubscribed">Unsubscribed</option>
         </select>
-        <select name="eventStatus" defaultValue={eventStatus}>
-          <option value="all">All events</option>
-          <option value="queued">Queued</option>
-          <option value="processed">Processed</option>
-          <option value="ignored">Ignored</option>
-          <option value="received">Received</option>
-        </select>
         <select name="msgStatus" defaultValue={msgStatus}>
           <option value="all">All message status</option>
           <option value="sent">Sent</option>
@@ -819,68 +1010,29 @@ export async function RestockAdminDashboard(props: {
         <div className="rr-link-row">
           <Link href={csvHref}>Export CSV</Link>
           {showDebug ? (
-            <Link href={buildHref({ ...baseParams, debug: false, eventPage: 1, msgPage: 1 })}>Hide diagnostics</Link>
+            <Link href={buildHref({ ...baseParams, debug: false, msgPage: 1 })}>Hide diagnostics</Link>
           ) : (
             <Link href={buildHref({ ...baseParams, debug: true })}>Show diagnostics</Link>
           )}
         </div>
       </form>
 
-      <h2>Run Actions</h2>
-      <p className="rr-note">
-        Use <strong>Trigger + Process Now</strong> for the normal manual test flow. The other actions are for queue control and webhook maintenance.
-      </p>
-      <div className="rr-grid rr-grid--actions">
-        <div className="rr-action-card rr-card rr-card--tight">
-          <h3>Queue only</h3>
-          <form className="rr-action-form" action={triggerVariantAction}>
-            <input
-              type="text"
-              name="variantId"
-              placeholder="Variant ID"
-            />
-            <button className="rr-btn" type="submit" title="Adds an event to queue only. Does not send until processed.">
-              Queue Manual Restock Event
-            </button>
-          </form>
-          <p className="rr-help">Use this when you want to line up one or more variants before processing.</p>
-        </div>
+      <RestockTriggerPanel
+        options={triggerVariantOptions}
+        sendAction={triggerAndProcessAction}
+        queueAction={triggerVariantAction}
+        processAction={processNowAction}
+      />
 
-        <div className="rr-action-card rr-card rr-card--tight">
-          <h3>Trigger and send</h3>
-          <form className="rr-action-form" action={triggerAndProcessAction}>
-            <input
-              type="text"
-              name="variantId"
-              placeholder="Variant ID"
-            />
-            <button className="rr-btn rr-btn--primary" type="submit" title="Queues one variant event and immediately processes sends.">
-              Trigger + Process Now
-            </button>
-          </form>
-          <p className="rr-help">Fastest path for a one-off test. Queue the event and immediately attempt delivery.</p>
-        </div>
-
-        <div className="rr-action-card rr-card rr-card--tight">
-          <h3>Process queued events</h3>
-          <form className="inline" action={processNowAction}>
-            <button className="rr-btn" type="submit" title="Processes all currently queued events and sends notifications.">
-              Process Queue Now
-            </button>
-          </form>
-          <p className="rr-help">Run this after queueing events if they have not been processed yet.</p>
-        </div>
-
-        <div className="rr-action-card rr-action-card--warn rr-card rr-card--tight">
-          <h3>Webhook maintenance</h3>
-          <form className="inline" action={ensureWebhookAction}>
-            <button className="rr-btn rr-btn--danger" type="submit" title="Creates or verifies inventory webhook registration in Shopify.">
-              Ensure Shopify Inventory Webhook
-            </button>
-          </form>
-          <p className="rr-help">Run this after app or environment changes to keep Shopify inventory delivery active.</p>
-        </div>
-      </div>
+      <details className="rr-maintenance rr-card rr-card--tight">
+        <summary>Webhook maintenance</summary>
+        <form className="inline" action={ensureWebhookAction}>
+          <button className="rr-btn rr-btn--danger" type="submit" title="Creates or verifies inventory webhook registration in Shopify.">
+            Ensure Shopify Inventory Webhook
+          </button>
+        </form>
+        <p className="rr-help">Run this after app or environment changes to keep Shopify inventory delivery active.</p>
+      </details>
 
       <h2>Subscriptions</h2>
       <Pager
@@ -979,47 +1131,7 @@ export async function RestockAdminDashboard(props: {
       {showDebug ? (
         <>
           <h2>Diagnostics</h2>
-          <p className="rr-note">Use these tables for webhook tracing and delivery debugging.</p>
-          <h2>Recent Events</h2>
-          <Pager
-            page={currentEventPage}
-            total={eventsTotal}
-            pageSize={EVENT_PAGE_SIZE}
-            makeHref={(page) => buildHref({ ...baseParams, eventPage: page })}
-          />
-          <div className="rr-table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th align="left">Occurred</th>
-                <th align="left">Variant</th>
-                <th align="left">From</th>
-                <th align="left">To</th>
-                <th align="left">Status</th>
-                <th align="left">Processed</th>
-              </tr>
-            </thead>
-            <tbody>
-              {events.length ? events.map((event) => (
-                <tr key={event.id}>
-                  <td>{formatCell(event.occurred_at)}</td>
-                  <td>{event.variant_id}</td>
-                  <td>{event.inventory_from ?? "-"}</td>
-                  <td>{event.inventory_to}</td>
-                  <td>{event.status}</td>
-                  <td>{formatCell(event.processed_at)}</td>
-                </tr>
-              )) : (
-                <tr>
-                  <td colSpan={6}>
-                    <div className="rr-empty">No events matched the current filters.</div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-          </div>
-
+          <p className="rr-note">Use this table for delivery debugging when a customer says they did not receive an alert.</p>
           <h2>Message Log</h2>
           <Pager
             page={currentMsgPage}

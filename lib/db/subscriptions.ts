@@ -24,6 +24,12 @@ interface ListSubscriptionsOptions {
   sortDirection?: SortDirection;
 }
 
+export interface SubscribedVariant {
+  variant_id: string;
+  subscription_count: number;
+  active_subscription_count: number;
+}
+
 export async function upsertSubscription(
   input: UpsertSubscriptionInput,
   db: SqlTag = sql
@@ -177,6 +183,22 @@ export async function getSubscriptionStatusCounts(db: SqlTag = sql): Promise<Rec
     result.total += row.count;
   }
   return result;
+}
+
+export async function listSubscribedVariants(db: SqlTag = sql): Promise<SubscribedVariant[]> {
+  const { rows } = await db<SubscribedVariant>`
+    SELECT
+      variant_id,
+      COUNT(*)::int AS subscription_count,
+      COUNT(*) FILTER (WHERE status = 'active')::int AS active_subscription_count
+    FROM restock_subscriptions
+    GROUP BY variant_id
+    ORDER BY
+      COUNT(*) FILTER (WHERE status = 'active') DESC,
+      MAX(created_at) DESC,
+      variant_id ASC
+  `;
+  return rows;
 }
 
 export async function requeueSubscription(subscriptionId: string): Promise<boolean> {
