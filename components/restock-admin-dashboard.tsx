@@ -433,27 +433,24 @@ export async function RestockAdminDashboard(props: {
           --rr-gap: 16px;
           --rr-font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
           --rr-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono";
-          --rr-bg: #f3f4f6;
+          --rr-bg: #f6f6f6;
           --rr-surface: rgba(255, 255, 255, 0.96);
           --rr-surface-solid: #ffffff;
-          --rr-border: rgba(16, 24, 40, 0.09);
+          --rr-border: #d9dadd;
           --rr-text: #0b1220;
           --rr-muted: rgba(11, 18, 32, 0.65);
           --rr-faint: rgba(11, 18, 32, 0.45);
-          --rr-primary: #165df5;
-          --rr-primary-2: #3d7bff;
+          --rr-primary: #303236;
+          --rr-primary-2: #303236;
           --rr-danger: #d64545;
-          --rr-warn-bg: #fff8e7;
-          --rr-warn-border: rgba(214, 159, 20, 0.25);
-          --rr-shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
-          --rr-shadow: 0 10px 28px rgba(16, 24, 40, 0.08);
-          --rr-shadow-lg: 0 18px 36px rgba(16, 24, 40, 0.1);
+          --rr-warn-bg: #f3f3f4;
+          --rr-warn-border: #d9dadd;
+          --rr-shadow-sm: none;
+          --rr-shadow: none;
+          --rr-shadow-lg: none;
           font-family: var(--rr-font);
           color: var(--rr-text);
-          background:
-            linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.86)),
-            radial-gradient(900px 320px at 0% 0%, rgba(22, 93, 245, 0.08), transparent 60%),
-            var(--rr-bg);
+          background: var(--rr-bg);
           min-height: 100vh;
           padding: 28px 18px 60px;
           overflow-x: hidden;
@@ -562,18 +559,18 @@ export async function RestockAdminDashboard(props: {
         }
 
         .rr-admin .rr-status-label--good {
-          background: rgba(2, 122, 72, 0.12);
-          color: #027a48;
+          background: #eeeeef;
+          color: #3f4246;
         }
 
         .rr-admin .rr-status-label--warning {
-          background: rgba(181, 71, 8, 0.12);
-          color: #b54708;
+          background: #eeeeef;
+          color: #3f4246;
         }
 
         .rr-admin .rr-status-label--danger {
-          background: rgba(180, 35, 24, 0.12);
-          color: #b42318;
+          background: #eeeeef;
+          color: #3f4246;
         }
 
         .rr-admin .rr-controls {
@@ -601,9 +598,9 @@ export async function RestockAdminDashboard(props: {
           padding: 0 12px;
           border-radius: 12px;
           border: 1px solid var(--rr-border);
-          background: rgba(255, 255, 255, 0.92);
+          background: #ffffff;
           color: var(--rr-text);
-          box-shadow: var(--rr-shadow-sm);
+          box-shadow: none;
           outline: none;
           transition: box-shadow 0.15s ease, border-color 0.15s ease, transform 0.08s ease;
         }
@@ -612,15 +609,15 @@ export async function RestockAdminDashboard(props: {
 
         .rr-admin input:focus,
         .rr-admin select:focus {
-          border-color: rgba(47, 107, 255, 0.45);
-          box-shadow: 0 0 0 4px rgba(47, 107, 255, 0.15), var(--rr-shadow-sm);
+          border-color: #9ca3af;
+          box-shadow: 0 0 0 3px rgba(48, 50, 54, 0.12);
         }
 
         .rr-admin select {
           appearance: none;
           background-image:
-            linear-gradient(45deg, transparent 50%, rgba(11, 18, 32, 0.55) 50%),
-            linear-gradient(135deg, rgba(11, 18, 32, 0.55) 50%, transparent 50%);
+            linear-gradient(45deg, transparent 50%, #777b80 50%),
+            linear-gradient(135deg, #777b80 50%, transparent 50%);
           background-position: calc(100% - 18px) 18px, calc(100% - 12px) 18px;
           background-size: 6px 6px, 6px 6px;
           background-repeat: no-repeat;
@@ -632,18 +629,18 @@ export async function RestockAdminDashboard(props: {
           padding: 0 14px;
           border-radius: 12px;
           border: 1px solid var(--rr-border);
-          background: rgba(255, 255, 255, 0.92);
+          background: #ffffff;
           color: var(--rr-text);
           font-weight: 650;
-          box-shadow: var(--rr-shadow-sm);
+          box-shadow: none;
           cursor: pointer;
           transition: transform 0.08s ease, box-shadow 0.15s ease, border-color 0.15s ease;
           white-space: nowrap;
         }
 
         .rr-admin .rr-btn:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 10px 22px rgba(16, 24, 40, 0.12);
+          transform: none;
+          box-shadow: none;
         }
 
         .rr-admin .rr-btn:disabled {
@@ -653,23 +650,23 @@ export async function RestockAdminDashboard(props: {
 
         .rr-admin .rr-btn:disabled:hover {
           transform: none;
-          box-shadow: var(--rr-shadow-sm);
+          box-shadow: none;
         }
 
         .rr-admin .rr-btn:active {
           transform: translateY(0);
-          box-shadow: var(--rr-shadow-sm);
+          box-shadow: none;
         }
 
         .rr-admin .rr-btn--primary {
-          background: linear-gradient(135deg, var(--rr-primary), var(--rr-primary-2));
-          border-color: rgba(47, 107, 255, 0.35);
+          background: var(--rr-primary);
+          border-color: var(--rr-primary);
           color: #fff;
         }
 
         .rr-admin .rr-btn--danger {
-          background: linear-gradient(135deg, #ff4d6d, #ff8aa0);
-          border-color: rgba(255, 77, 109, 0.35);
+          background: #4b4d52;
+          border-color: #4b4d52;
           color: #fff;
         }
 
@@ -738,7 +735,7 @@ export async function RestockAdminDashboard(props: {
         }
 
         .rr-admin tbody tr:hover td {
-          background: rgba(47, 107, 255, 0.06);
+          background: #f3f3f4;
         }
 
         .rr-admin .rr-mono {
@@ -814,10 +811,10 @@ export async function RestockAdminDashboard(props: {
         }
 
         .rr-admin .rr-status-banner {
-          border: 1px solid rgba(141, 76, 0, 0.22);
+          border: 1px solid #d9dadd;
           border-radius: var(--rr-radius-sm);
-          background: rgba(255, 247, 222, 0.9);
-          color: #6f4800;
+          background: #ffffff;
+          color: #4b5563;
           padding: 12px 14px;
           line-height: 1.4;
         }

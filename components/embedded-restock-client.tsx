@@ -833,7 +833,7 @@ const styles: Record<string, CSSProperties> = {
   page: {
     minHeight: "100vh",
     padding: "28px 28px 64px",
-    background: "#f5f5f3",
+    background: "#f6f6f6",
     fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
     color: "#2d2c29"
   },
@@ -858,9 +858,9 @@ const styles: Record<string, CSSProperties> = {
   summaryStrip: {
     display: "grid",
     gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-    borderTop: "1px solid #dddcd7",
-    borderBottom: "1px solid #dddcd7",
-    background: "#fcfcfa"
+    borderTop: "1px solid #d9dadd",
+    borderBottom: "1px solid #d9dadd",
+    background: "#ffffff"
   },
   row: {
     display: "flex",
@@ -890,11 +890,11 @@ const styles: Record<string, CSSProperties> = {
     background: "transparent"
   },
   statDivider: {
-    borderLeft: "1px solid #dddcd7"
+    borderLeft: "1px solid #d9dadd"
   },
   warnCard: {
-    background: "#fff8e7",
-    border: "1px solid #e3d0a1",
+    background: "#ffffff",
+    border: "1px solid #d9dadd",
     borderRadius: 12,
     padding: 16,
     boxShadow: "none"
@@ -941,16 +941,16 @@ const styles: Record<string, CSSProperties> = {
     lineHeight: 1.2
   },
   statusMetricGood: {
-    background: "#d9e3db",
-    color: "#3f644b"
+    background: "#eeeeef",
+    color: "#3f4246"
   },
   statusMetricWarning: {
-    background: "#eadccf",
-    color: "#a66a3f"
+    background: "#eeeeef",
+    color: "#3f4246"
   },
   statusMetricDanger: {
-    background: "#f0d7d3",
-    color: "#9d352d"
+    background: "#eeeeef",
+    color: "#3f4246"
   },
   statDetail: {
     margin: 0,
@@ -963,25 +963,33 @@ const styles: Record<string, CSSProperties> = {
     minWidth: 200,
     padding: "0 12px",
     borderRadius: 6,
-    border: "1px solid #dddcd7",
-    background: "#fcfcfa",
+    border: "1px solid #d9dadd",
+    background: "#ffffff",
     color: "#2d2c29"
   },
   select: {
+    appearance: "none",
+    WebkitAppearance: "none",
     height: 36,
     minWidth: 140,
     padding: "0 12px",
     borderRadius: 6,
-    border: "1px solid #dddcd7",
-    background: "#fcfcfa",
-    color: "#2d2c29"
+    border: "1px solid #d9dadd",
+    backgroundColor: "#ffffff",
+    backgroundImage:
+      "linear-gradient(45deg, transparent 50%, #777b80 50%), linear-gradient(135deg, #777b80 50%, transparent 50%)",
+    backgroundPosition: "calc(100% - 16px) 15px, calc(100% - 10px) 15px",
+    backgroundSize: "6px 6px, 6px 6px",
+    backgroundRepeat: "no-repeat",
+    color: "#2d2c29",
+    paddingRight: 32
   },
   pausedBanner: {
     margin: "14px 0",
     padding: "10px 0 10px 12px",
-    borderLeft: "3px solid #a66a3f",
+    borderLeft: "3px solid #9ca3af",
     background: "transparent",
-    color: "#6f4b31",
+    color: "#4b5563",
     lineHeight: 1.4
   },
   triggerRow: {
@@ -992,32 +1000,40 @@ const styles: Record<string, CSSProperties> = {
     marginTop: 12
   },
   triggerSelect: {
+    appearance: "none",
+    WebkitAppearance: "none",
     height: 36,
     flex: "1 1 280px",
     minWidth: 240,
     maxWidth: 560,
     padding: "0 12px",
     borderRadius: 6,
-    border: "1px solid #dddcd7",
-    background: "#fcfcfa",
-    color: "#2d2c29"
+    border: "1px solid #d9dadd",
+    backgroundColor: "#ffffff",
+    backgroundImage:
+      "linear-gradient(45deg, transparent 50%, #777b80 50%), linear-gradient(135deg, #777b80 50%, transparent 50%)",
+    backgroundPosition: "calc(100% - 16px) 15px, calc(100% - 10px) 15px",
+    backgroundSize: "6px 6px, 6px 6px",
+    backgroundRepeat: "no-repeat",
+    color: "#2d2c29",
+    paddingRight: 32
   },
   advanced: {
     marginTop: 12,
     paddingTop: 12,
-    borderTop: "1px solid #dddcd7"
+    borderTop: "1px solid #d9dadd"
   },
   advancedSummary: {
     cursor: "pointer",
-    color: "#3f644b",
+    color: "#3f4246",
     fontWeight: 700
   },
   button: {
     height: 36,
     padding: "0 14px",
     borderRadius: 6,
-    border: "1px solid #8c8f89",
-    background: "#fcfcfa",
+    border: "1px solid #cfd1d4",
+    background: "#ffffff",
     color: "#2d2c29",
     cursor: "pointer",
     fontWeight: 600
@@ -1026,8 +1042,8 @@ const styles: Record<string, CSSProperties> = {
     height: 36,
     padding: "0 14px",
     borderRadius: 6,
-    border: "1px solid #3f644b",
-    background: "#3f644b",
+    border: "1px solid #303236",
+    background: "#303236",
     color: "#fff",
     cursor: "pointer",
     fontWeight: 700
@@ -1040,8 +1056,8 @@ const styles: Record<string, CSSProperties> = {
     height: 30,
     padding: "0 10px",
     borderRadius: 6,
-    border: "1px solid #8c8f89",
-    background: "#fcfcfa",
+    border: "1px solid #cfd1d4",
+    background: "#ffffff",
     color: "#2d2c29",
     cursor: "pointer",
     fontWeight: 600
@@ -1049,19 +1065,20 @@ const styles: Record<string, CSSProperties> = {
   tableWrap: {
     overflowX: "auto",
     marginTop: 14,
-    borderTop: "1px solid #dddcd7"
+    borderTop: "1px solid #d9dadd",
+    background: "#ffffff"
   },
   table: {
     width: "100%",
     borderCollapse: "collapse",
-    background: "transparent"
+    background: "#ffffff"
   },
   th: {
     textAlign: "left",
     fontSize: 12,
     color: "#6f726d",
     padding: "10px 8px",
-    borderBottom: "1px solid #dddcd7"
+    borderBottom: "1px solid #d9dadd"
   },
   sortButton: {
     appearance: "none",
@@ -1077,7 +1094,7 @@ const styles: Record<string, CSSProperties> = {
     padding: 0
   },
   sortState: {
-    color: "#3f644b",
+    color: "#4b5563",
     fontSize: 10,
     letterSpacing: "0.04em"
   },
