@@ -219,6 +219,7 @@ export interface VariantRestockEmailContext {
 
 export interface VariantAdminMeta {
   variantId: string;
+  productTitle: string | null;
   sku: string | null;
   variantTitle: string | null;
 }
@@ -290,7 +291,6 @@ export async function getVariantAdminMetaMap(
   const uniqueIds = Array.from(new Set(variantIds.map((id) => String(id).trim()).filter(Boolean)));
   if (!uniqueIds.length) return {};
 
-  const ids = uniqueIds.map((id) => `gid://shopify/ProductVariant/${id}`);
   const query = `
     query VariantAdminMeta($ids: [ID!]!) {
       nodes(ids: $ids) {
@@ -299,31 +299,39 @@ export async function getVariantAdminMetaMap(
           legacyResourceId
           sku
           title
+          product {
+            title
+          }
         }
       }
     }
   `;
 
-  const data = await shopifyGraphql<{
-    nodes: Array<
-      | {
-          legacyResourceId: string;
-          sku: string | null;
-          title: string;
-        }
-      | null
-    >;
-  }>(query, { ids });
-
   const result: Record<string, VariantAdminMeta> = {};
-  for (const node of data.nodes) {
-    if (!node?.legacyResourceId) continue;
-    const variantId = String(node.legacyResourceId);
-    result[variantId] = {
-      variantId,
-      sku: node.sku || null,
-      variantTitle: node.title && node.title.toLowerCase() !== "default title" ? node.title : null
-    };
+  for (let i = 0; i < uniqueIds.length; i += 100) {
+    const ids = uniqueIds.slice(i, i + 100).map((id) => `gid://shopify/ProductVariant/${id}`);
+    const data = await shopifyGraphql<{
+      nodes: Array<
+        | {
+            legacyResourceId: string;
+            sku: string | null;
+            title: string;
+            product: { title: string } | null;
+          }
+        | null
+      >;
+    }>(query, { ids });
+
+    for (const node of data.nodes) {
+      if (!node?.legacyResourceId) continue;
+      const variantId = String(node.legacyResourceId);
+      result[variantId] = {
+        variantId,
+        productTitle: node.product?.title ?? null,
+        sku: node.sku || null,
+        variantTitle: node.title && node.title.toLowerCase() !== "default title" ? node.title : null
+      };
+    }
   }
 
   return result;

@@ -14,6 +14,15 @@ export interface UpsertSubscriptionInput {
 
 type SqlTag = typeof sql;
 type SubscriptionStatusFilter = "active" | "notified" | "unsubscribed" | "all";
+export type SubscriptionSortKey = "created" | "notified" | "active" | "product";
+export type SortDirection = "asc" | "desc";
+
+interface ListSubscriptionsOptions {
+  limit?: number;
+  offset?: number;
+  sortBy?: SubscriptionSortKey;
+  sortDirection?: SortDirection;
+}
 
 export async function upsertSubscription(
   input: UpsertSubscriptionInput,
@@ -93,13 +102,15 @@ export async function unsubscribeAllByToken(token: string, db: SqlTag = sql): Pr
 export async function listSubscriptions(
   query?: string,
   status: SubscriptionStatusFilter = "all",
-  options: { limit?: number; offset?: number } = {},
+  options: ListSubscriptionsOptions = {},
   db: SqlTag = sql
 ): Promise<RestockSubscription[]> {
   const trimmed = query?.trim();
   const statusFilter = status === "all" ? null : status;
   const limit = options.limit ?? 300;
   const offset = options.offset ?? 0;
+  const sortBy = options.sortBy === "product" ? "created" : options.sortBy ?? "created";
+  const sortDirection = options.sortDirection ?? (sortBy === "created" || sortBy === "notified" ? "desc" : "asc");
 
   const { rows } = await db<RestockSubscription>`
     SELECT *
@@ -111,7 +122,20 @@ export async function listSubscriptions(
         OR phone ILIKE ${`%${trimmed ?? ""}%`}
         OR variant_id ILIKE ${`%${trimmed ?? ""}%`}
       )
-    ORDER BY created_at DESC
+    ORDER BY
+      CASE WHEN ${sortBy} = 'created' AND ${sortDirection} = 'asc' THEN created_at END ASC,
+      CASE WHEN ${sortBy} = 'created' AND ${sortDirection} = 'desc' THEN created_at END DESC,
+      CASE WHEN ${sortBy} = 'notified' AND ${sortDirection} = 'asc' THEN notified_at END ASC NULLS LAST,
+      CASE WHEN ${sortBy} = 'notified' AND ${sortDirection} = 'desc' THEN notified_at END DESC NULLS LAST,
+      CASE
+        WHEN ${sortBy} = 'active' AND ${sortDirection} = 'asc' THEN
+          CASE status WHEN 'active' THEN 0 WHEN 'notified' THEN 1 ELSE 2 END
+      END ASC,
+      CASE
+        WHEN ${sortBy} = 'active' AND ${sortDirection} = 'desc' THEN
+          CASE status WHEN 'active' THEN 0 WHEN 'notified' THEN 1 ELSE 2 END
+      END DESC,
+      created_at DESC
     LIMIT ${limit}
     OFFSET ${offset}
   `;

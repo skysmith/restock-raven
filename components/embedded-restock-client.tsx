@@ -30,17 +30,25 @@ interface EmbeddedSubscriptionsResponse {
   ok: true;
   shop: string;
   total: number;
-  subscriptions: Array<{
-    id: string;
-    email: string | null;
-    phone: string | null;
-    variant_id: string;
-    status: "active" | "notified" | "unsubscribed";
-    marketing_opt_in: boolean;
-    created_at: string;
-    notified_at: string | null;
-  }>;
+  subscriptions: EmbeddedSubscription[];
 }
+
+interface EmbeddedSubscription {
+  id: string;
+  email: string | null;
+  phone: string | null;
+  variant_id: string;
+  product_title: string | null;
+  sku: string | null;
+  variant_title: string | null;
+  status: "active" | "notified" | "unsubscribed";
+  marketing_opt_in: boolean;
+  created_at: string;
+  notified_at: string | null;
+}
+
+type SubscriptionSortKey = "created" | "notified" | "active" | "product";
+type SortDirection = "asc" | "desc";
 
 interface TriggerResponse {
   ok: true;
@@ -149,6 +157,18 @@ function formatEmbeddedBridgeError(timeoutMs: number, diagnostics: EmbeddedDiagn
   )}.`;
 }
 
+function getSubscriptionProductName(subscription: EmbeddedSubscription): string {
+  return subscription.product_title?.trim() || "Unknown product";
+}
+
+function getSubscriptionVariantDetails(subscription: EmbeddedSubscription): string | null {
+  return [subscription.sku, subscription.variant_title].filter(Boolean).join(" - ") || null;
+}
+
+function getDefaultSortDirection(sortBy: SubscriptionSortKey): SortDirection {
+  return sortBy === "created" || sortBy === "notified" ? "desc" : "asc";
+}
+
 async function waitForShopifyBridge(timeoutMs = 12000): Promise<NonNullable<Window["shopify"]>> {
   const started = Date.now();
   persistEmbeddedHost();
@@ -205,6 +225,8 @@ export function EmbeddedRestockClient() {
   const [subscriptionsTotal, setSubscriptionsTotal] = useState(0);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<"all" | "active" | "notified" | "unsubscribed">("all");
+  const [sortBy, setSortBy] = useState<SubscriptionSortKey>("created");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [subscriptionsLoading, setSubscriptionsLoading] = useState(false);
   const [events, setEvents] = useState<EmbeddedEventsResponse["events"]>([]);
   const [eventsTotal, setEventsTotal] = useState(0);
@@ -215,6 +237,42 @@ export function EmbeddedRestockClient() {
   const [variantId, setVariantId] = useState("");
   const [triggering, setTriggering] = useState(false);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
+
+  function buildSubscriptionParams(): URLSearchParams {
+    const params = new URLSearchParams();
+    if (query.trim()) params.set("q", query.trim());
+    if (status !== "all") params.set("status", status);
+    params.set("sortBy", sortBy);
+    params.set("sortDirection", sortDirection);
+    params.set("limit", "12");
+    return params;
+  }
+
+  function updateSubscriptionSort(nextSortBy: SubscriptionSortKey) {
+    setSortDirection((currentDirection) =>
+      sortBy === nextSortBy
+        ? currentDirection === "asc"
+          ? "desc"
+          : "asc"
+        : getDefaultSortDirection(nextSortBy)
+    );
+    setSortBy(nextSortBy);
+  }
+
+  function renderSortButton(label: string, nextSortBy: SubscriptionSortKey) {
+    const active = sortBy === nextSortBy;
+    return (
+      <button
+        type="button"
+        style={styles.sortButton}
+        onClick={() => updateSubscriptionSort(nextSortBy)}
+        title={nextSortBy === "active" ? "Sort active subscriptions first" : `Sort by ${label.toLowerCase()}`}
+      >
+        {label}
+        {active ? <span style={styles.sortState}>{sortDirection.toUpperCase()}</span> : null}
+      </button>
+    );
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -253,10 +311,7 @@ export function EmbeddedRestockClient() {
 
       setSubscriptionsLoading(true);
       try {
-        const params = new URLSearchParams();
-        if (query.trim()) params.set("q", query.trim());
-        if (status !== "all") params.set("status", status);
-        params.set("limit", "12");
+        const params = buildSubscriptionParams();
 
         const data = await fetchEmbeddedJson<EmbeddedSubscriptionsResponse>(
           `/api/embedded/restock/subscriptions?${params.toString()}`
@@ -281,7 +336,7 @@ export function EmbeddedRestockClient() {
     return () => {
       cancelled = true;
     };
-  }, [sessionReady, query, status]);
+  }, [sessionReady, query, status, sortBy, sortDirection]);
 
   useEffect(() => {
     let cancelled = false;
@@ -347,10 +402,7 @@ export function EmbeddedRestockClient() {
     if (!sessionReady) return;
     setSubscriptionsLoading(true);
     try {
-      const params = new URLSearchParams();
-      if (query.trim()) params.set("q", query.trim());
-      if (status !== "all") params.set("status", status);
-      params.set("limit", "12");
+      const params = buildSubscriptionParams();
 
       const data = await fetchEmbeddedJson<EmbeddedSubscriptionsResponse>(
         `/api/embedded/restock/subscriptions?${params.toString()}`
@@ -544,30 +596,36 @@ export function EmbeddedRestockClient() {
                     <thead>
                       <tr>
                         <th style={styles.th}>Contact</th>
-                        <th style={styles.th}>Variant</th>
-                        <th style={styles.th}>Status</th>
-                        <th style={styles.th}>Created</th>
-                        <th style={styles.th}>Notified</th>
+                        <th style={styles.th}>{renderSortButton("Product", "product")}</th>
+                        <th style={styles.th}>{renderSortButton("Status", "active")}</th>
+                        <th style={styles.th}>{renderSortButton("Created", "created")}</th>
+                        <th style={styles.th}>{renderSortButton("Notified", "notified")}</th>
                         <th style={styles.th}>Action</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {subscriptions.map((subscription) => (
-                        <tr key={subscription.id}>
-                          <td style={styles.td}>{subscription.email || subscription.phone || "-"}</td>
-                          <td style={styles.td}>{subscription.variant_id}</td>
-                          <td style={styles.td}>{subscription.status}</td>
-                          <td style={styles.td}>{new Date(subscription.created_at).toLocaleString()}</td>
-                          <td style={styles.td}>
-                            {subscription.notified_at ? new Date(subscription.notified_at).toLocaleString() : "-"}
-                          </td>
-                          <td style={styles.td}>
-                            <button style={styles.smallButton} onClick={() => void requeue(subscription.id)}>
-                              Requeue
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                      {subscriptions.map((subscription) => {
+                        const variantDetails = getSubscriptionVariantDetails(subscription);
+                        return (
+                          <tr key={subscription.id}>
+                            <td style={styles.td}>{subscription.email || subscription.phone || "-"}</td>
+                            <td style={styles.td} title={`Variant ID: ${subscription.variant_id}`}>
+                              <span style={styles.primaryCell}>{getSubscriptionProductName(subscription)}</span>
+                              {variantDetails ? <span style={styles.secondaryCell}>{variantDetails}</span> : null}
+                            </td>
+                            <td style={styles.td}>{subscription.status}</td>
+                            <td style={styles.td}>{new Date(subscription.created_at).toLocaleString()}</td>
+                            <td style={styles.td}>
+                              {subscription.notified_at ? new Date(subscription.notified_at).toLocaleString() : "-"}
+                            </td>
+                            <td style={styles.td}>
+                              <button style={styles.smallButton} onClick={() => void requeue(subscription.id)}>
+                                Requeue
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -816,9 +874,38 @@ const styles: Record<string, CSSProperties> = {
     padding: "10px 8px",
     borderBottom: "1px solid #e3e5e7"
   },
+  sortButton: {
+    appearance: "none",
+    border: 0,
+    background: "transparent",
+    color: "inherit",
+    cursor: "pointer",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+    font: "inherit",
+    fontWeight: 700,
+    padding: 0
+  },
+  sortState: {
+    color: "#005bd3",
+    fontSize: 10,
+    letterSpacing: "0.04em"
+  },
   td: {
     padding: "12px 8px",
     borderBottom: "1px solid #eceef0",
     fontSize: 14
+  },
+  primaryCell: {
+    display: "block",
+    color: "#111827",
+    fontWeight: 700
+  },
+  secondaryCell: {
+    display: "block",
+    marginTop: 3,
+    color: "#6b7280",
+    fontSize: 12
   }
 };

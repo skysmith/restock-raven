@@ -8,6 +8,8 @@ export default async function AdminRestockPage(props: {
     msgStatus?: "all" | "sent" | "failed";
     channel?: "all" | "email" | "sms";
     debug?: string;
+    subSort?: string;
+    subDir?: string;
     subPage?: string;
     eventPage?: string;
     msgPage?: string;

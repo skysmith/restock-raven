@@ -6,6 +6,7 @@ import {
   listSubscriptions,
   requeueSubscription
 } from "@/lib/db/subscriptions";
+import type { SortDirection, SubscriptionSortKey } from "@/lib/db/subscriptions";
 import {
   countEvents,
   getEventStatusCounts,
@@ -20,7 +21,7 @@ import {
 } from "@/lib/db/message-log";
 import { getRestockMinQtyFromZero } from "@/lib/jobs/transition";
 import { processRestockQueue } from "@/lib/jobs/process-restock";
-import { getVariantAdminMetaMap } from "@/lib/shopify/admin";
+import { getVariantAdminMetaMap, type VariantAdminMeta } from "@/lib/shopify/admin";
 
 type SubscriptionStatusFilter = "all" | "active" | "notified" | "unsubscribed";
 type EventStatusFilter = "all" | "received" | "queued" | "processed" | "ignored";
@@ -44,6 +45,68 @@ function formatCell(value: unknown): string {
   return String(value);
 }
 
+function formatProductName(variantMeta: VariantAdminMeta | undefined): string {
+  return variantMeta?.productTitle?.trim() || "Unknown product";
+}
+
+function formatVariantDetails(variantMeta: VariantAdminMeta | undefined): string {
+  return [variantMeta?.sku, variantMeta?.variantTitle].filter(Boolean).join(" - ") || "-";
+}
+
+function getSubscriptionSortKey(value: string | undefined): SubscriptionSortKey {
+  if (value === "product" || value === "notified" || value === "active" || value === "created") {
+    return value;
+  }
+  return "created";
+}
+
+function getDefaultSortDirection(sortBy: SubscriptionSortKey): SortDirection {
+  return sortBy === "created" || sortBy === "notified" ? "desc" : "asc";
+}
+
+function getSortDirection(value: string | undefined, sortBy: SubscriptionSortKey): SortDirection {
+  if (value === "asc" || value === "desc") return value;
+  return getDefaultSortDirection(sortBy);
+}
+
+const productCollator = new Intl.Collator("en", { numeric: true, sensitivity: "base" });
+
+function sortSubscriptionsByProduct<T extends { variant_id: string }>(
+  subscriptions: T[],
+  variantMetaById: Record<string, VariantAdminMeta>,
+  sortDirection: SortDirection
+): T[] {
+  return [...subscriptions].sort((a, b) => {
+    const aProduct = formatProductName(variantMetaById[a.variant_id]);
+    const bProduct = formatProductName(variantMetaById[b.variant_id]);
+    const result = productCollator.compare(aProduct, bProduct);
+    return sortDirection === "asc" ? result : -result;
+  });
+}
+
+function SortHeader(props: {
+  label: string;
+  sortBy: SubscriptionSortKey;
+  currentSortBy: SubscriptionSortKey;
+  currentSortDirection: SortDirection;
+  makeHref: (sortBy: SubscriptionSortKey, sortDirection: SortDirection) => string;
+}) {
+  const isCurrent = props.sortBy === props.currentSortBy;
+  const nextDirection: SortDirection = isCurrent
+    ? props.currentSortDirection === "asc"
+      ? "desc"
+      : "asc"
+    : getDefaultSortDirection(props.sortBy);
+  const suffix = isCurrent ? ` ${props.currentSortDirection.toUpperCase()}` : "";
+
+  return (
+    <Link className="rr-sort-link" href={props.makeHref(props.sortBy, nextDirection)}>
+      {props.label}
+      <span className="rr-sort-state">{suffix}</span>
+    </Link>
+  );
+}
+
 function buildHref(params: {
   basePath: string;
   q?: string;
@@ -52,6 +115,8 @@ function buildHref(params: {
   msgStatus: MessageStatusFilter;
   channel: ChannelFilter;
   debug?: boolean;
+  subSort: SubscriptionSortKey;
+  subDir: SortDirection;
   subPage: number;
   eventPage: number;
   msgPage: number;
@@ -63,6 +128,8 @@ function buildHref(params: {
   if (params.msgStatus !== "all") qs.set("msgStatus", params.msgStatus);
   if (params.channel !== "all") qs.set("channel", params.channel);
   if (params.debug) qs.set("debug", "1");
+  if (params.subSort !== "created") qs.set("subSort", params.subSort);
+  if (params.subDir !== getDefaultSortDirection(params.subSort)) qs.set("subDir", params.subDir);
   if (params.subPage > 1) qs.set("subPage", String(params.subPage));
   if (params.eventPage > 1) qs.set("eventPage", String(params.eventPage));
   if (params.msgPage > 1) qs.set("msgPage", String(params.msgPage));
@@ -206,6 +273,8 @@ export async function RestockAdminDashboard(props: {
     msgStatus?: MessageStatusFilter;
     channel?: ChannelFilter;
     debug?: string;
+    subSort?: string;
+    subDir?: string;
     subPage?: string;
     eventPage?: string;
     msgPage?: string;
@@ -221,15 +290,20 @@ export async function RestockAdminDashboard(props: {
     msgStatus = "all",
     channel = "all",
     debug,
+    subSort,
+    subDir,
     subPage,
     eventPage,
     msgPage
   } = await props.searchParams;
   const showDebug = debug === "1";
+  const subscriptionSortBy = getSubscriptionSortKey(subSort);
+  const subscriptionSortDirection = getSortDirection(subDir, subscriptionSortBy);
 
   const currentSubPage = toPositiveInt(subPage, 1);
   const currentEventPage = toPositiveInt(eventPage, 1);
   const currentMsgPage = toPositiveInt(msgPage, 1);
+  const subscriptionOffset = (currentSubPage - 1) * SUB_PAGE_SIZE;
 
   let subscriptions = [] as Awaited<ReturnType<typeof listSubscriptions>>;
   let subscriptionsTotal = 0;
@@ -240,7 +314,8 @@ export async function RestockAdminDashboard(props: {
   let eventsTotal = 0;
   let messageLog = [] as Awaited<ReturnType<typeof listMessageLog>>;
   let messageLogTotal = 0;
-  let variantMetaById: Record<string, { sku: string | null; variantTitle: string | null }> = {};
+  let variantMetaById: Record<string, VariantAdminMeta> = {};
+  let shouldSliceProductSort = false;
   let dashboardError: string | null = null;
 
   try {
@@ -257,7 +332,9 @@ export async function RestockAdminDashboard(props: {
     ] = await Promise.all([
       listSubscriptions(q, status, {
         limit: SUB_PAGE_SIZE,
-        offset: (currentSubPage - 1) * SUB_PAGE_SIZE
+        offset: subscriptionOffset,
+        sortBy: subscriptionSortBy,
+        sortDirection: subscriptionSortDirection
       }),
       countSubscriptions(q, status),
       getSubscriptionStatusCounts(),
@@ -275,8 +352,24 @@ export async function RestockAdminDashboard(props: {
       countMessageLog({ query: q, status: msgStatus, channel })
     ]);
 
+    if (subscriptionSortBy === "product" && subscriptionsTotal > SUB_PAGE_SIZE) {
+      subscriptions = await listSubscriptions(q, status, {
+        limit: subscriptionsTotal,
+        offset: 0,
+        sortBy: subscriptionSortBy,
+        sortDirection: subscriptionSortDirection
+      });
+      shouldSliceProductSort = true;
+    }
+
     try {
       variantMetaById = await getVariantAdminMetaMap(subscriptions.map((s) => s.variant_id));
+      if (subscriptionSortBy === "product") {
+        subscriptions = sortSubscriptionsByProduct(subscriptions, variantMetaById, subscriptionSortDirection);
+        if (shouldSliceProductSort) {
+          subscriptions = subscriptions.slice(subscriptionOffset, subscriptionOffset + SUB_PAGE_SIZE);
+        }
+      }
     } catch {
       variantMetaById = {};
     }
@@ -296,6 +389,8 @@ export async function RestockAdminDashboard(props: {
     msgStatus,
     channel,
     debug: showDebug,
+    subSort: subscriptionSortBy,
+    subDir: subscriptionSortDirection,
     subPage: currentSubPage,
     eventPage: currentEventPage,
     msgPage: currentMsgPage
@@ -537,6 +632,26 @@ export async function RestockAdminDashboard(props: {
           white-space: nowrap;
         }
 
+        .rr-admin .rr-sort-link {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          color: inherit;
+          font-weight: 800;
+          text-decoration: none;
+        }
+
+        .rr-admin .rr-sort-link:hover {
+          color: var(--rr-primary);
+          text-decoration: none;
+        }
+
+        .rr-admin .rr-sort-state {
+          color: var(--rr-primary);
+          font-size: 10px;
+          letter-spacing: 0.04em;
+        }
+
         .rr-admin tbody td {
           padding: 12px 14px;
           border-bottom: 1px solid rgba(16, 24, 40, 0.06);
@@ -675,6 +790,8 @@ export async function RestockAdminDashboard(props: {
           defaultValue={q ?? ""}
           placeholder="Search contact or variant ID"
         />
+        <input type="hidden" name="subSort" value={subscriptionSortBy} />
+        <input type="hidden" name="subDir" value={subscriptionSortDirection} />
         <select name="status" defaultValue={status}>
           <option value="all">All subscriptions</option>
           <option value="active">Active</option>
@@ -778,26 +895,67 @@ export async function RestockAdminDashboard(props: {
           <tr>
             <th align="left">Email</th>
             <th align="left">Phone</th>
+            <th align="left">
+              <SortHeader
+                label="Product"
+                sortBy="product"
+                currentSortBy={subscriptionSortBy}
+                currentSortDirection={subscriptionSortDirection}
+                makeHref={(sortBy, sortDirection) =>
+                  buildHref({ ...baseParams, subSort: sortBy, subDir: sortDirection, subPage: 1 })
+                }
+              />
+            </th>
             <th align="left">SKU / Variant</th>
-            <th align="left">Variant</th>
-            <th align="left">Status</th>
+            <th align="left">
+              <SortHeader
+                label="Status"
+                sortBy="active"
+                currentSortBy={subscriptionSortBy}
+                currentSortDirection={subscriptionSortDirection}
+                makeHref={(sortBy, sortDirection) =>
+                  buildHref({ ...baseParams, subSort: sortBy, subDir: sortDirection, subPage: 1 })
+                }
+              />
+            </th>
             <th align="left">Marketing</th>
-            <th align="left">Notified</th>
+            <th align="left">
+              <SortHeader
+                label="Created"
+                sortBy="created"
+                currentSortBy={subscriptionSortBy}
+                currentSortDirection={subscriptionSortDirection}
+                makeHref={(sortBy, sortDirection) =>
+                  buildHref({ ...baseParams, subSort: sortBy, subDir: sortDirection, subPage: 1 })
+                }
+              />
+            </th>
+            <th align="left">
+              <SortHeader
+                label="Notified"
+                sortBy="notified"
+                currentSortBy={subscriptionSortBy}
+                currentSortDirection={subscriptionSortDirection}
+                makeHref={(sortBy, sortDirection) =>
+                  buildHref({ ...baseParams, subSort: sortBy, subDir: sortDirection, subPage: 1 })
+                }
+              />
+            </th>
             <th align="left">Action</th>
           </tr>
         </thead>
         <tbody>
           {subscriptions.length ? subscriptions.map((subscription) => {
             const variantMeta = variantMetaById[subscription.variant_id];
-            const skuVariant = [variantMeta?.sku, variantMeta?.variantTitle].filter(Boolean).join(" - ");
             return (
               <tr key={subscription.id}>
                 <td>{subscription.email ?? "-"}</td>
                 <td>{subscription.phone ?? "-"}</td>
-                <td>{skuVariant || "-"}</td>
-                <td>{subscription.variant_id}</td>
+                <td title={`Variant ID: ${subscription.variant_id}`}>{formatProductName(variantMeta)}</td>
+                <td>{formatVariantDetails(variantMeta)}</td>
                 <td>{subscription.status}</td>
                 <td>{subscription.marketing_opt_in ? "opted-in" : "-"}</td>
+                <td>{formatCell(subscription.created_at)}</td>
                 <td>{formatCell(subscription.notified_at)}</td>
                 <td>
                   <form action={requeueAction}>
@@ -809,7 +967,7 @@ export async function RestockAdminDashboard(props: {
             );
           }) : (
             <tr>
-              <td colSpan={8}>
+              <td colSpan={9}>
                 <div className="rr-empty">No subscriptions matched the current filters.</div>
               </td>
             </tr>
