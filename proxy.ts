@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { isAuthorizedBasicAuth } from "@/lib/security/admin-auth";
 
-export function middleware(request: NextRequest): NextResponse {
+export function proxy(request: NextRequest): NextResponse {
   const path = request.nextUrl.pathname;
   const isProtected = path.startsWith("/admin/restock") || path.startsWith("/api/admin/restock");
 
